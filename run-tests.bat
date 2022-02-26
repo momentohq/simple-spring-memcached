@@ -7,14 +7,6 @@ REM first build project using default setting and install all artifacts in local
 call:execute "mvn clean install"
 
 cd integration-test
-call:execute "mvn verify -Pxmemcached -Dssm.defaultSerializationType=PROVIDER"
-call:execute "mvn verify -Pxmemcached -Dssm.defaultSerializationType=PROVIDER -Dspring.profiles.active=xml"
-call:execute "mvn verify -Pxmemcached -Dssm.defaultSerializationType=JAVA"
-call:execute "mvn verify -Pxmemcached -Dssm.defaultSerializationType=JAVA -Dspring.profiles.active=xml"
-call:execute "mvn verify -Pxmemcached -Dssm.defaultSerializationType=JSON"
-call:execute "mvn verify -Pxmemcached -Dssm.defaultSerializationType=JSON -Dspring.profiles.active=xml"
-
-
 REM execute integration-test using xmemcached and all serialization types
 call:execute "mvn verify -Pxmemcached -Dssm.defaultSerializationType=PROVIDER"
 call:execute "mvn verify -Pxmemcached -Dssm.defaultSerializationType=PROVIDER -Dspring.profiles.active=xml"
