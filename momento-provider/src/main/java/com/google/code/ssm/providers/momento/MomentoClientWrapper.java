@@ -1,14 +1,14 @@
 /*
  * Copyright (c) 2014-2019 Jakub Białek
- * 
+ *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
  * rights to use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to
  * permit persons to whom the Software is furnished to do so, subject to the following conditions:
- * 
+ *
  * The above copyright notice and this permission notice shall be included in all copies or substantial portions of the
  * Software.
- * 
+ *
  * THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE
  * WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
  * COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR
@@ -18,18 +18,20 @@
 package com.google.code.ssm.providers.momento;
 
 import java.net.SocketAddress;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
+import java.nio.ByteBuffer;
+import java.util.*;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.google.code.ssm.providers.momento.transcoders.SerializingTranscoder;
+import com.google.code.ssm.providers.momento.transcoders.Transcoder;
 import momento.sdk.SimpleCacheClient;
+import momento.sdk.messages.CacheGetResponse;
+import momento.sdk.messages.CacheSetResponse;
 import net.spy.memcached.CachedData;
-import net.spy.memcached.MemcachedClientIF;
-import net.spy.memcached.transcoders.Transcoder;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,22 +43,23 @@ import com.google.code.ssm.providers.CachedObject;
 import com.google.code.ssm.providers.CachedObjectImpl;
 
 /**
- * 
+ *
  * @author Jakub Białek
  * @since 3.5.0
- * 
+ *
  */
-class MemcacheClientWrapper extends AbstractMemcacheClientWrapper {
+class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MemcacheClientWrapper.class);
+    private static final Logger LOGGER = LoggerFactory.getLogger(MomentoClientWrapper.class);
 
     private final Map<CacheTranscoder, Object> adapters = new HashMap<CacheTranscoder, Object>();
 
-
+    private final String defaultCacheName;
     private final SimpleCacheClient momentoClient;
 
-    MemcacheClientWrapper(final SimpleCacheClient momentoClient) {
+    MomentoClientWrapper(final SimpleCacheClient momentoClient, final String defaultCacheName) {
         this.momentoClient = momentoClient;
+        this.defaultCacheName = defaultCacheName;
     }
 
     @Override
@@ -93,39 +96,55 @@ class MemcacheClientWrapper extends AbstractMemcacheClientWrapper {
     @Override
     public Object get(final String key) throws TimeoutException, CacheException {
         try {
-            return momentoClient.get("test-cache", key);
+            CacheTranscoder cacheTranscoder = getTranscoder();
+            CacheGetResponse response = momentoClient.get(defaultCacheName, key);
+            if (response.byteArray().isPresent()) {
+                byte[] returnedBytes = response.byteArray().get();
+                return cacheTranscoder.decode(new CachedObjectWrapper(
+                        new CachedData(0, returnedBytes, returnedBytes.length)
+                ));
+            }
+            return null;
         } catch (RuntimeException e) {
             if (translateException(e)) {
                 throw new CacheException(e);
             } else if (e.getCause() instanceof TimeoutException) {
                 throw (TimeoutException) e.getCause();
             }
-
             throw e;
         }
     }
 
     @Override
     public <T> T get(final String key, final CacheTranscoder transcoder) throws CacheException, TimeoutException {
+        Future<CacheGetResponse> f = null;
         try {
-            return momentoClient.get(key, this.<T> getTranscoder(transcoder));
-        } catch (RuntimeException e) {
-            if (translateException(e)) {
-                throw new CacheException(e);
-            } else if (e.getCause() instanceof TimeoutException) {
-                throw (TimeoutException) e.getCause();
+            Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
+            f = momentoClient.getAsync(defaultCacheName, key);
+            Optional<byte[]> cacheGetResponse = f.get().byteArray();
+            if (cacheGetResponse.isPresent()) {
+                byte[] returnedBytes = cacheGetResponse.get();
+                return cacheTranscoder.decode(new CachedData(0, returnedBytes, returnedBytes.length));
             }
-
-            throw e;
+            return null;
+        } catch (InterruptedException | ExecutionException e) {
+            cancel(f);
+            throw new CacheException(e);
         }
     }
 
     @Override
     public <T> T get(final String key, final CacheTranscoder transcoder, final long timeout) throws TimeoutException, CacheException {
-        Future<T> f = null;
+        Future<CacheGetResponse> f = null;
         try {
-            f = momentoClient.asyncGet(key, this.<T> getTranscoder(transcoder));
-            return f.get(timeout, TimeUnit.MILLISECONDS);
+            Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
+            f = momentoClient.getAsync(defaultCacheName, key);
+            Optional<byte[]> cacheGetResponse = f.get(timeout, TimeUnit.MILLISECONDS).byteArray();
+            if (cacheGetResponse.isPresent()) {
+                byte[] returnedBytes = cacheGetResponse.get();
+                return cacheTranscoder.decode(new CachedData(returnedBytes.length, returnedBytes, returnedBytes.length));
+            }
+            return null;
         } catch (InterruptedException | ExecutionException e) {
             cancel(f);
             throw new CacheException(e);
@@ -134,8 +153,7 @@ class MemcacheClientWrapper extends AbstractMemcacheClientWrapper {
 
     @Override
     public Collection<SocketAddress> getAvailableServers() {
-        //NOOP?
-        return null;
+        return new ArrayList<>();
     }
 
     @Override
@@ -166,10 +184,12 @@ class MemcacheClientWrapper extends AbstractMemcacheClientWrapper {
 
     @Override
     public boolean set(final String key, final int exp, final Object value) throws TimeoutException, CacheException {
-        Future<Boolean> f = null;
+        Future<CacheSetResponse> f = null;
+        CacheTranscoder transcoder = getTranscoder();
+        ByteBuffer buffer = ByteBuffer.wrap(transcoder.encode(value).getData());
         try {
-            f = momentoClient.set(key, exp, value);
-            return f.get();
+            f = momentoClient.setAsync(defaultCacheName, key, buffer, exp);
+            return f.get() != null;
         } catch (InterruptedException | ExecutionException e) {
             cancel(f);
             throw new CacheException(e);
@@ -179,10 +199,12 @@ class MemcacheClientWrapper extends AbstractMemcacheClientWrapper {
     @Override
     public <T> boolean set(final String key, final int exp, final T value, final CacheTranscoder transcoder) throws TimeoutException,
             CacheException {
-        Future<Boolean> f = null;
+        Future<CacheSetResponse> f = null;
         try {
-            f = momentoClient.set(key, exp, value, getTranscoder(transcoder));
-            return f.get();
+           Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
+           ByteBuffer buffer = ByteBuffer.wrap(cacheTranscoder.encode(value).getData());
+           f = momentoClient.setAsync(defaultCacheName, key, buffer, exp);
+           return f.get() != null;
         } catch (InterruptedException | ExecutionException e) {
             cancel(f);
             throw new CacheException(e);
@@ -196,8 +218,7 @@ class MemcacheClientWrapper extends AbstractMemcacheClientWrapper {
 
     @Override
     public CacheTranscoder getTranscoder() {
-//        return new TranscoderWrapper(momentoClient.getTranscoder());
-        return null;
+        return new TranscoderWrapper(new SerializingTranscoder());
     }
 
     @Override
