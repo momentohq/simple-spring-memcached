@@ -8,7 +8,7 @@
     <version>4.1.4-SNAPSHOT</version>
     <name>simple-spring-memcached-parent</name>
     <description>Simple spring memcached - parent</description>
-    <url>http://github.com/ragnor/simple-spring-memcached</url>
+    <url>http://github.com/momentohq/simple-spring-memcached</url>
 
     <licenses>
         <license>
@@ -18,6 +18,13 @@
     </licenses>
 
     <developers>
+        <developer>
+            <id>momentohq</id>
+            <name>Momento</name>
+            <roles>
+                <role>Owner</role>
+            </roles>
+        </developer>
         <developer>
             <id>nelz9999</id>
             <name>Nelson Carpentier</name>
@@ -34,42 +41,22 @@
         </developer>
     </developers>
 
-    <mailingLists>
-        <mailingList>
-            <name>Project Google group</name>
-            <post>simple-spring-memecached@googlegroups.com</post>
-            <subscribe>simple-spring-memecached@googlegroups.com</subscribe>
-            <unsubscribe>simple-spring-memecached@googlegroups.com</unsubscribe>
-            <archive>http://groups.google.com/group/simple-spring-memecached</archive>
-        </mailingList>
-    </mailingLists>
-
-    <scm>
-        <connection>scm:git:git@github.com:ragnor/simple-spring-memcached.git</connection>
-        <developerConnection>scm:git:git@github.com:ragnor/simple-spring-memcached.git</developerConnection>
-        <url>http://github.com/ragnor/simple-spring-memcached</url>
-        <tag>HEAD</tag>
-    </scm>
-
     <issueManagement>
         <system>github</system>
-        <url>http://github.com/ragnor/simple-spring-memcached/issues</url>
+        <url>http://github.com/momento/simple-spring-memcached/issues</url>
     </issueManagement>
 
-    <ciManagement>
-        <system>jenkins</system>
-        <url>https://ragnor.ci.cloudbees.com/</url>
-    </ciManagement>
-
     <distributionManagement>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
         <repository>
-            <id>ossrh</id>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+            <id>central</id>
+            <name>a0y1ep4a9fve4-artifactory-primary-0-releases</name>
+            <url>https://momento.jfrog.io/artifactory/maven-local</url>
         </repository>
+        <snapshotRepository>
+            <id>snapshots</id>
+            <name>a0y1ep4a9fve4-artifactory-primary-0-snapshots</name>
+            <url>https://momento.jfrog.io/artifactory/maven-local</url>
+        </snapshotRepository>
     </distributionManagement>
 
     <repositories>

@@ -25,7 +25,7 @@ import java.util.List;
 
 public class MomentoAddressProvider implements AddressProvider {
 
-    // Momento doesn't use local addresses, so we explicitly return an empty list
+    // Momento doesn't use local addresses, so we explicitly return a default port (11211)
     @Override
     public List<InetSocketAddress> getAddresses() {
        return Collections.singletonList(new InetSocketAddress(11211));

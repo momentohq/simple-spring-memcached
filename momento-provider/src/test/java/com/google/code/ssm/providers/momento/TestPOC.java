@@ -97,13 +97,11 @@ public class TestPOC {
     @SneakyThrows
     @Ignore // Comment out if you'd like to test this out yourself
     public void testPocSimple() {
-        String test = "fooBar";
-        exampleCacheFactory.getObject().set("test-key", 500, test, SerializationType.PROVIDER);
         String result = getSimpleObject("test-key");
         if (result == null) {
             System.out.println("Nothing found");
         } else {
-            System.out.println("Expected fooBar, got: " + result);
+            System.out.println("Got: " + result);
         }
     }
 
@@ -111,18 +109,11 @@ public class TestPOC {
     @SneakyThrows
     @Ignore // Comment out if you'd like to test this out yourself
     public void testPocComplex() {
-        TestObject t = new TestObject();
-        t.setId(3);
-        t.setName("testName");
-        // The couchbase serializer has some issues with basic POJOs, so we just use Jackson to serialize
-        // and deserialize the objects when interacting with the cache for an easy path forward
-        ObjectMapper mapper = new ObjectMapper();
-        exampleCacheFactory.getObject().set("test-complex-key", 500, mapper.writeValueAsString(t), SerializationType.PROVIDER);
         TestObject result = getComplexObject("test-complex-key");
         if (result == null) {
             System.out.println("Nothing found");
         } else {
-            System.out.println("Expected " + t + " got " + result);
+            System.out.println("Got " + result);
         }
     }
 }
