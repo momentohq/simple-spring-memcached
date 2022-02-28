@@ -82,8 +82,9 @@ public class TestPOC {
         Cache cache = exampleCacheFactory.getObject();
         ObjectMapper mapper = new ObjectMapper();
         if (cache != null) {
-            TestObject obj = mapper.readValue((String) cache.get(objectKey, SerializationType.PROVIDER), TestObject.class);
-            if (obj != null) {
+            String result = cache.get(objectKey, SerializationType.PROVIDER);
+            if (result != null) {
+                TestObject obj = mapper.readValue(result, TestObject.class);
                 return obj;
             }
         }
