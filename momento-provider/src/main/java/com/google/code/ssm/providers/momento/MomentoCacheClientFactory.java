@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2019 Jakub Białek
+ * Copyright (c) 2022 Momento, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -17,13 +17,10 @@
 
 package com.google.code.ssm.providers.momento;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.List;
 
 import momento.sdk.SimpleCacheClient;
-//import momento.sdk.exceptions.AlreadyExistsException;
-//import momento.sdk.messages.CacheGetResponse;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,19 +28,12 @@ import com.google.code.ssm.providers.CacheClient;
 import com.google.code.ssm.providers.CacheClientFactory;
 import com.google.code.ssm.providers.CacheConfiguration;
 
-/**
- *
- * @author Jakub Białek
- * @since 3.5.0
- *
- */
-public class MomentoClientFactoryImpl implements CacheClientFactory {
+public class MomentoCacheClientFactory implements CacheClientFactory {
 
-    private static final Logger LOGGER = LoggerFactory.getLogger(MomentoClientFactoryImpl.class);
-
+    private static final Logger LOGGER = LoggerFactory.getLogger(MomentoCacheClientFactory.class);
 
     @Override
-    public CacheClient create(final List<InetSocketAddress> addrs, final CacheConfiguration conf) throws IOException {
+    public CacheClient create(final List<InetSocketAddress> addrs, final CacheConfiguration conf) {
         MomentoConfiguration momentoConfiguration = null;
         if (conf instanceof MomentoConfiguration) {
             momentoConfiguration = (MomentoConfiguration) conf;
@@ -53,7 +43,7 @@ public class MomentoClientFactoryImpl implements CacheClientFactory {
                         momentoConfiguration.getMomentoAuthToken(),
                         momentoConfiguration.getDefaultTtl())
                     .build();
-            return new MomentoClientWrapper(client, momentoConfiguration.getDefaultCacheName());
+            return new MomentoClientWrapper(client, momentoConfiguration.getCacheName());
         }
         throw new RuntimeException("Momento auth token must be provided in CacheConfiguration");
     }

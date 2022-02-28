@@ -10,7 +10,7 @@
     <artifactId>momento-provider</artifactId>
     <packaging>jar</packaging>
     <name>momento-provider</name>
-    <description>Use Momento Simple Cache as a backing cache</description>
+    <description>Use Momento Cache as a backing cache</description>
     <url>http://github.com/momento/simple-spring-memcached</url>
 
     <licenses>
@@ -30,25 +30,10 @@
         </developer>
     </developers>
 
-    <mailingLists>
-        <mailingList>
-            <name>Project Google group</name>
-            <post>simple-spring-memecached@googlegroups.com</post>
-            <subscribe>simple-spring-memecached@googlegroups.com</subscribe>
-            <unsubscribe>simple-spring-memecached@googlegroups.com</unsubscribe>
-            <archive>http://groups.google.com/group/simple-spring-memecached</archive>
-        </mailingList>
-    </mailingLists>
-
     <issueManagement>
         <system>github</system>
-        <url>http://github.com/ragnor/simple-spring-memcached/issues</url>
+        <url>http://github.com/momento/simple-spring-memcached/issues</url>
     </issueManagement>
-
-    <ciManagement>
-        <system>jenkins</system>
-        <url>https://ragnor.ci.cloudbees.com/</url>
-    </ciManagement>
 
     <dependencies>
         <dependency>

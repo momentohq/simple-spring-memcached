@@ -17,25 +17,17 @@
 
 package com.google.code.ssm.providers.momento;
 
-import lombok.Data;
-import lombok.EqualsAndHashCode;
-import net.spy.memcached.ConnectionFactoryBuilder;
-import net.spy.memcached.transcoders.Transcoder;
+import com.google.code.ssm.config.AddressProvider;
 
-import com.google.code.ssm.providers.CacheConfiguration;
+import java.net.InetSocketAddress;
+import java.util.Collections;
+import java.util.List;
 
+public class MomentoAddressProvider implements AddressProvider {
 
-@Data
-@EqualsAndHashCode(callSuper = true)
-public class MomentoConfiguration extends CacheConfiguration {
-    private String momentoAuthToken;
-    private String cacheName;
-    private int defaultTtl = 300;
-
-    /**
-     * default transcoder or null if not set
-     *
-     * @see ConnectionFactoryBuilder#setTranscoder(Transcoder)
-     */
-    private Transcoder<Object> defaultTranscoder;
+    // Momento doesn't use local addresses, so we explicitly return an empty list
+    @Override
+    public List<InetSocketAddress> getAddresses() {
+       return Collections.singletonList(new InetSocketAddress(11211));
+    }
 }

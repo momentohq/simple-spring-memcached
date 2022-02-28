@@ -1,5 +1,5 @@
 /*
- * Copyright (c) 2014-2019 Jakub Białek
+ * Copyright (c) 2022 Momento, Inc.
  *
  * Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated
  * documentation files (the "Software"), to deal in the Software without restriction, including without limitation the
@@ -19,13 +19,16 @@ package com.google.code.ssm.providers.momento;
 
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.google.code.ssm.providers.momento.transcoders.SerializingTranscoder;
 import com.google.code.ssm.providers.momento.transcoders.Transcoder;
 import momento.sdk.SimpleCacheClient;
@@ -52,7 +55,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MomentoClientWrapper.class);
 
-    private final Map<CacheTranscoder, Object> adapters = new HashMap<CacheTranscoder, Object>();
+    private final Map<CacheTranscoder, Transcoder<Object>> adapters = new HashMap<>();
 
     private final String defaultCacheName;
     private final SimpleCacheClient momentoClient;
@@ -197,8 +200,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     }
 
     @Override
-    public <T> boolean set(final String key, final int exp, final T value, final CacheTranscoder transcoder) throws TimeoutException,
-            CacheException {
+    public <T> boolean set(final String key, final int exp, final T value, final CacheTranscoder transcoder) throws CacheException {
         Future<CacheSetResponse> f = null;
         try {
            Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
@@ -231,7 +233,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
         Transcoder<T> transcoderAdapter = (Transcoder<T>) adapters.get(transcoder);
         if (transcoderAdapter == null) {
             transcoderAdapter = (Transcoder<T>) new com.google.code.ssm.providers.momento.TranscoderAdapter(transcoder);
-            adapters.put(transcoder, transcoderAdapter);
+            adapters.put(transcoder, (Transcoder<Object>) transcoderAdapter);
         }
 
         return transcoderAdapter;
