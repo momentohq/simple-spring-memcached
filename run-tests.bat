@@ -63,11 +63,10 @@ goto:eof
  if not "%ERRORLEVEL%" == "0" (
  	echo Error while executing  %~1 in %CD%
  	call:exit 2> NUL
- ) else echo #########    Executed: %~1 in %CD%   ######### 
- 
+ ) else echo #########    Executed: %~1 in %CD%   #########
+
 goto:eof
 
 :exit
  () creates an syntax error, stops immediatly
 goto:eof
- 

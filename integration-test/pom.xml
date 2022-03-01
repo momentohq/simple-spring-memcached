@@ -86,7 +86,13 @@
 			<artifactId>spring-test</artifactId>
 			<scope>test</scope>
 		</dependency>
-	</dependencies>
+        <dependency>
+            <groupId>com.google.code.simple-spring-memcached</groupId>
+            <artifactId>momento-provider</artifactId>
+			<version>${project.version}</version>
+            <scope>test</scope>
+        </dependency>
+    </dependencies>
 
 	<build>
 		<plugins>
@@ -180,7 +186,7 @@
 				            </configuration>
 				          </execution>
 				        </executions>
-				      </plugin>				
+				      </plugin>
 				</plugins>
 			</build>
 			<dependencies>
@@ -190,7 +196,7 @@
 					<version>${project.version}</version>
 				</dependency>
 			</dependencies>
-			
+
 		</profile>
 
 		<profile>
@@ -220,7 +226,7 @@
 				            </configuration>
 				          </execution>
 				        </executions>
-				      </plugin>				
+				      </plugin>
 				</plugins>
 			</build>
 			<dependencies>
@@ -230,7 +236,7 @@
 					<version>${project.version}</version>
 				</dependency>
 			</dependencies>
-		</profile>		
+		</profile>
 
 		<profile>
 			<id>aws-elasticache</id>
@@ -259,7 +265,7 @@
 				            </configuration>
 				          </execution>
 				        </executions>
-				      </plugin>				
+				      </plugin>
 				</plugins>
 			</build>
 			<dependencies>
