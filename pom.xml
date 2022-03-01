@@ -48,14 +48,14 @@
 
     <distributionManagement>
         <repository>
-            <id>momento-java</id>
-            <name>maven-java-local</name>
-            <url>https://momento.jfrog.io/artifactory/maven-java-local</url>
+            <id>momento</id>
+            <name>maven-local</name>
+            <url>https://momento.jfrog.io/artifactory/maven-local</url>
         </repository>
         <snapshotRepository>
-            <id>momento-java-snapshots</id>
-            <name>maven-java-local</name>
-            <url>https://momento.jfrog.io/artifactory/maven-java-local</url>
+            <id>momento-snapshots</id>
+            <name>maven-local</name>
+            <url>https://momento.jfrog.io/artifactory/maven-local</url>
         </snapshotRepository>
     </distributionManagement>
 
