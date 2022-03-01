@@ -4,7 +4,7 @@
     <parent>
         <groupId>com.google.code.simple-spring-memcached</groupId>
         <artifactId>simple-spring-memcached-parent</artifactId>
-        <version>4.1.4-SNAPSHOT</version>
+        <version>4.2.0-SNAPSHOT</version>
     </parent>
 
     <artifactId>momento-provider</artifactId>
