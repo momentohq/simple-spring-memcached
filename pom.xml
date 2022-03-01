@@ -48,23 +48,29 @@
 
     <distributionManagement>
         <repository>
-            <id>central</id>
-            <name>a0y1ep4a9fve4-artifactory-primary-0-releases</name>
-            <url>https://momento.jfrog.io/artifactory/maven-local</url>
+            <id>momento-java</id>
+            <name>maven-java-local</name>
+            <url>https://momento.jfrog.io/artifactory/maven-java-local</url>
         </repository>
         <snapshotRepository>
-            <id>snapshots</id>
-            <name>a0y1ep4a9fve4-artifactory-primary-0-snapshots</name>
-            <url>https://momento.jfrog.io/artifactory/maven-local</url>
+            <id>momento-java-snapshots</id>
+            <name>maven-java-local</name>
+            <url>https://momento.jfrog.io/artifactory/maven-java-local</url>
         </snapshotRepository>
     </distributionManagement>
 
+
     <repositories>
         <repository>
-            <id>momento</id>
+            <id>momento-sdk</id>
             <url>https://momento.jfrog.io/artifactory/maven-public</url>
         </repository>
+        <repository>
+            <id>central</id>
+            <url>http://repo1.maven.org/maven2</url>
+        </repository>
     </repositories>
+
     <modules>
         <module>simple-spring-memcached</module>
         <module>integration-test</module>
@@ -161,6 +167,11 @@
                 <groupId>commons-lang</groupId>
                 <artifactId>commons-lang</artifactId>
                 <version>2.6</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.commons</groupId>
+                <artifactId>commons-lang3</artifactId>
+                <version>3.12.0</version>
             </dependency>
             <dependency>
                 <groupId>com.google.code.simple-spring-memcached</groupId>
