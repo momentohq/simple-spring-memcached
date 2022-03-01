@@ -5,7 +5,7 @@
     <groupId>com.google.code.simple-spring-memcached</groupId>
     <artifactId>simple-spring-memcached-parent</artifactId>
     <packaging>pom</packaging>
-    <version>4.1.4-SNAPSHOT</version>
+    <version>4.2.0-SNAPSHOT</version>
     <name>simple-spring-memcached-parent</name>
     <description>Simple spring memcached - parent</description>
     <url>http://github.com/momentohq/simple-spring-memcached</url>
@@ -230,7 +230,7 @@
             <dependency>
                 <groupId>momento.sandbox</groupId>
                 <artifactId>momento-sdk</artifactId>
-                <version>0.18.0</version>
+                <version>0.19.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
