@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>com.google.code.simple-spring-memcached</groupId>
 		<artifactId>simple-spring-memcached-parent</artifactId>
-		<version>4.1.4-SNAPSHOT</version>
+		<version>4.2.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>simple-spring-memcached</artifactId>
 	<packaging>jar</packaging>
@@ -56,7 +56,7 @@
 	</ciManagement>
 
 	<prerequisites>
-		<!-- use javac at least in version 1.6.30 otherwise you get 'incompatible 
+		<!-- use javac at least in version 1.6.30 otherwise you get 'incompatible
 			types' errors -->
 		<!-- see http://bugs.sun.com/view_bug.do?bug_id=6512707 -->
 		<maven>3.0.4</maven>
