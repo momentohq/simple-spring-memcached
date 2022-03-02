@@ -1,6 +1,5 @@
 package com.google.code.ssm.providers.momento;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.code.ssm.Cache;
 import com.google.code.ssm.CacheFactory;
@@ -27,7 +26,7 @@ import java.io.Serializable;
 @ContextConfiguration(loader= AnnotationConfigContextLoader.class)
 public class TestPOC {
 
-    private static final String MOMENTO_AUTH_TOKEN = "<YOUR MOMENTO TOKEN GOES HERE>";
+    private static final String MOMENTO_AUTH_TOKEN = System.getenv("MOMENTO_AUTH_TOKEN");
     // IMPORTANT: This presumes you have already created a cache in Momento named 'example-cache'
     private static final String MOMENTO_CACHE_NAME = "example-cache";
 
@@ -58,6 +57,15 @@ public class TestPOC {
     public static class TestObject implements Serializable {
         int id;
         String name;
+        SubObject subObject;
+
+    }
+
+    @Data
+    @JsonSerialize
+    public static class SubObject implements Serializable {
+       String customerId;
+       String customerName;
     }
 
 
@@ -80,13 +88,8 @@ public class TestPOC {
     @SneakyThrows
     public TestObject getComplexObject(@ParameterValueKeyProvider String objectKey) {
         Cache cache = exampleCacheFactory.getObject();
-        ObjectMapper mapper = new ObjectMapper();
         if (cache != null) {
-            String result = cache.get(objectKey, SerializationType.PROVIDER);
-            if (result != null) {
-                TestObject obj = mapper.readValue(result, TestObject.class);
-                return obj;
-            }
+            return cache.get(objectKey, SerializationType.PROVIDER);
         }
         // Otherwise, retrieve object from source location, e.g. DynamoDB, S3
         // return getObjectFromSource(objectKey);
