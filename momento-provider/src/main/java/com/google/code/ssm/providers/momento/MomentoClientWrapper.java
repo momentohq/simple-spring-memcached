@@ -47,6 +47,7 @@ import com.google.code.ssm.providers.CachedObjectImpl;
 class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MomentoClientWrapper.class);
+    private static final int EXTRA_HDR_LEN = 4;
 
     private final Map<CacheTranscoder, Transcoder<Object>> adapters = new HashMap<>();
 
@@ -96,9 +97,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
             CacheGetResponse response = momentoClient.get(defaultCacheName, key);
             if (response.byteArray().isPresent()) {
                 byte[] returnedBytes = response.byteArray().get();
-                return cacheTranscoder.decode(new CachedObjectWrapper(
-                        new CachedData(0, returnedBytes, returnedBytes.length)
-                ));
+                return cacheTranscoder.decode(new CachedObjectWrapper(new CachedData(getFlag(returnedBytes, 0), returnedBytes, returnedBytes.length)));
             }
             return null;
         } catch (RuntimeException e) {
@@ -114,7 +113,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
             Optional<byte[]> cacheGetResponse = response.byteArray();
             if (cacheGetResponse.isPresent()) {
                 byte[] returnedBytes = cacheGetResponse.get();
-                return cacheTranscoder.decode(new CachedData(0, returnedBytes, returnedBytes.length));
+                return cacheTranscoder.decode(new CachedData(getFlag(returnedBytes, 0), returnedBytes, returnedBytes.length));
             }
             return null;
         } catch (RuntimeException e) {
@@ -122,6 +121,8 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
         }
     }
 
+    // Right now we are just using our synchronous client, so timeout is ignored. We will
+    // bring this back in once we resolve some underlying Netty issues
     @Override
     public <T> T get(final String key, final CacheTranscoder transcoder, final long timeout) throws CacheException {
         try {
@@ -130,7 +131,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
             Optional<byte[]> cacheGetResponse = response.byteArray();
             if (cacheGetResponse.isPresent()) {
                 byte[] returnedBytes = cacheGetResponse.get();
-                return cacheTranscoder.decode(new CachedData(returnedBytes.length, returnedBytes, returnedBytes.length));
+                return cacheTranscoder.decode(new CachedData(getFlag(returnedBytes, 0), returnedBytes, returnedBytes.length));
             }
             return null;
         } catch (RuntimeException e) {
@@ -218,14 +219,11 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
         return transcoderAdapter;
     }
 
-    private void cancel(final Future<?> f) {
-        if (f != null) {
-            f.cancel(true);
-        }
-    }
-
-    private boolean translateException(final RuntimeException e) {
-        return e.getCause() instanceof InterruptedException || e.getCause() instanceof ExecutionException;
+    private static int getFlag(byte[] data, int i) {
+        return (data[i] & 0xff) << 24
+                | (data[i + 1] & 0xff) << 16
+                | (data[i + 2] & 0xff) << 8
+                | (data[i + 3] & 0xff);
     }
 
     private static class TranscoderWrapper implements CacheTranscoder {
