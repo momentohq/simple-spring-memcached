@@ -44,10 +44,6 @@ import com.google.code.ssm.providers.CacheTranscoder;
 import com.google.code.ssm.providers.CachedObject;
 import com.google.code.ssm.providers.CachedObjectImpl;
 
-/**
- * @author Jakub Białek
- * @since 3.5.0
- */
 class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MomentoClientWrapper.class);
@@ -84,7 +80,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     }
 
     @Override
-    public boolean delete(final String key) throws TimeoutException, CacheException {
+    public boolean delete(final String key) throws CacheException {
         throw new CacheException(new RuntimeException("not implemented"));
     }
 
@@ -94,40 +90,52 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     }
 
     @Override
-    public Object get(final String key) {
-        CacheTranscoder cacheTranscoder = getTranscoder();
-        CacheGetResponse response = momentoClient.get(defaultCacheName, key);
-        if (response.byteArray().isPresent()) {
-            byte[] returnedBytes = response.byteArray().get();
-            return cacheTranscoder.decode(new CachedObjectWrapper(
-                    new CachedData(0, returnedBytes, returnedBytes.length)
-            ));
+    public Object get(final String key) throws CacheException {
+        try {
+            CacheTranscoder cacheTranscoder = getTranscoder();
+            CacheGetResponse response = momentoClient.get(defaultCacheName, key);
+            if (response.byteArray().isPresent()) {
+                byte[] returnedBytes = response.byteArray().get();
+                return cacheTranscoder.decode(new CachedObjectWrapper(
+                        new CachedData(0, returnedBytes, returnedBytes.length)
+                ));
+            }
+            return null;
+        } catch (RuntimeException e) {
+            throw new CacheException(e);
         }
-        return null;
     }
 
     @Override
-    public <T> T get(final String key, final CacheTranscoder transcoder) {
-        Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
-        CacheGetResponse response = momentoClient.get(defaultCacheName, key);
-        Optional<byte[]> cacheGetResponse = response.byteArray();
-        if (cacheGetResponse.isPresent()) {
-            byte[] returnedBytes = cacheGetResponse.get();
-            return cacheTranscoder.decode(new CachedData(0, returnedBytes, returnedBytes.length));
+    public <T> T get(final String key, final CacheTranscoder transcoder) throws CacheException {
+        try {
+            Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
+            CacheGetResponse response = momentoClient.get(defaultCacheName, key);
+            Optional<byte[]> cacheGetResponse = response.byteArray();
+            if (cacheGetResponse.isPresent()) {
+                byte[] returnedBytes = cacheGetResponse.get();
+                return cacheTranscoder.decode(new CachedData(0, returnedBytes, returnedBytes.length));
+            }
+            return null;
+        } catch (RuntimeException e) {
+            throw new CacheException(e);
         }
-        return null;
     }
 
     @Override
-    public <T> T get(final String key, final CacheTranscoder transcoder, final long timeout) throws TimeoutException, CacheException {
-        Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
-        CacheGetResponse response = momentoClient.get(defaultCacheName, key);
-        Optional<byte[]> cacheGetResponse = response.byteArray();
-        if (cacheGetResponse.isPresent()) {
-            byte[] returnedBytes = cacheGetResponse.get();
-            return cacheTranscoder.decode(new CachedData(returnedBytes.length, returnedBytes, returnedBytes.length));
+    public <T> T get(final String key, final CacheTranscoder transcoder, final long timeout) throws CacheException {
+        try {
+            Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
+            CacheGetResponse response = momentoClient.get(defaultCacheName, key);
+            Optional<byte[]> cacheGetResponse = response.byteArray();
+            if (cacheGetResponse.isPresent()) {
+                byte[] returnedBytes = cacheGetResponse.get();
+                return cacheTranscoder.decode(new CachedData(returnedBytes.length, returnedBytes, returnedBytes.length));
+            }
+            return null;
+        } catch (RuntimeException e) {
+            throw new CacheException(e);
         }
-        return null;
     }
 
     @Override
@@ -161,19 +169,27 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     }
 
     @Override
-    public boolean set(final String key, final int exp, final Object value) {
-        CacheTranscoder transcoder = getTranscoder();
-        ByteBuffer buffer = ByteBuffer.wrap(transcoder.encode(value).getData());
+    public boolean set(final String key, final int exp, final Object value) throws CacheException {
+        try {
+            CacheTranscoder transcoder = getTranscoder();
+            ByteBuffer buffer = ByteBuffer.wrap(transcoder.encode(value).getData());
             CacheSetResponse response = momentoClient.set(defaultCacheName, key, buffer, exp);
             return response != null;
+        } catch (RuntimeException e) {
+            throw new CacheException(e);
+        }
     }
 
     @Override
-    public <T> boolean set(final String key, final int exp, final T value, final CacheTranscoder transcoder) {
+    public <T> boolean set(final String key, final int exp, final T value, final CacheTranscoder transcoder) throws CacheException {
+        try {
             Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
             ByteBuffer buffer = ByteBuffer.wrap(cacheTranscoder.encode(value).getData());
             CacheSetResponse response = momentoClient.set(defaultCacheName, key, buffer, exp);
             return response != null;
+        } catch (RuntimeException e) {
+            throw new CacheException(e);
+        }
     }
 
     @Override
