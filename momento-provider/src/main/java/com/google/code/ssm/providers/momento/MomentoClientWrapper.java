@@ -27,6 +27,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
+import com.google.code.ssm.Cache;
 import com.google.code.ssm.providers.momento.transcoders.SerializingTranscoder;
 import com.google.code.ssm.providers.momento.transcoders.Transcoder;
 import momento.sdk.SimpleCacheClient;
@@ -46,7 +47,7 @@ import com.google.code.ssm.providers.CachedObjectImpl;
 class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(MomentoClientWrapper.class);
-    private static final int EXTRA_HDR_LEN = 4;
+    private static final int SIZE_OF_INT = 4;
 
     private final Map<CacheTranscoder, Transcoder<Object>> adapters = new HashMap<>();
 
@@ -196,15 +197,14 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
         return transcoderAdapter;
     }
 
-    // Helper function that concats the CachedObject to raw bytes before calling `set`.
+    // Helper function that concatenates the CachedObject to raw bytes before calling `set`.
     // This helps maintain our serialization flags so that we can deserialize the object upon a `get`
     private boolean writeOutToMomento(final String key, final int exp, final int flagsUsed, final byte[] data) {
-        final byte[] flags = intToBytes(flagsUsed);
-        ByteBuffer buffer = ByteBuffer.allocate(flags.length + data.length);
-        buffer.put(flags);
+        ByteBuffer buffer = ByteBuffer.allocate(SIZE_OF_INT + data.length);
+        buffer.putInt(flagsUsed);
         buffer.put(data);
         buffer.rewind();
-        CacheSetResponse response = momentoClient.set(defaultCacheName, key, buffer.asReadOnlyBuffer(), exp);
+        CacheSetResponse response = momentoClient.set(defaultCacheName, key, buffer, exp);
         return response != null;
     }
 
@@ -213,15 +213,9 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     // actual object
     private <T> T readFromMomento(final String key, final CacheTranscoder transcoder) {
         Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
-        CacheGetResponse response = momentoClient.get(defaultCacheName, key);
-        Optional<byte[]> cacheGetResponse = response.byteArray();
-        if (cacheGetResponse.isPresent()) {
-            byte[] returnedBytes = cacheGetResponse.get();
-            int flags = getFlags(returnedBytes);
-            byte[] originalData = getData(returnedBytes);
-            return cacheTranscoder.decode(new CachedData(flags, originalData, originalData.length));
-        }
-        return null;
+        Optional<CachedData> maybeCachedData = performGet(key);
+        return maybeCachedData.map(cacheTranscoder::decode)
+                .orElse(null);
     }
 
     // Helper function that reads the raw bytes from Momento and splits up the bytes
@@ -229,34 +223,21 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     // actual object, uses our default Transcoder
     private Object readFromMomento(final String key) {
         CacheTranscoder cacheTranscoder = getTranscoder();
+        Optional<CachedData> maybeCachedData = performGet(key);
+        return maybeCachedData.map(cachedData -> cacheTranscoder.decode(new CachedObjectWrapper(cachedData)))
+                .orElse(null);
+    }
+
+    private Optional<CachedData> performGet(final String key) {
         CacheGetResponse response = momentoClient.get(defaultCacheName, key);
         Optional<byte[]> cacheGetResponse = response.byteArray();
         if (cacheGetResponse.isPresent()) {
-            byte[] returnedBytes = cacheGetResponse.get();
-            int flags = getFlags(returnedBytes);
-            byte[] originalData = getData(returnedBytes);
-            return cacheTranscoder.decode(new CachedObjectWrapper(new CachedData(flags, originalData, originalData.length)));
+            ByteBuffer byteBuffer = ByteBuffer.wrap(cacheGetResponse.get());
+            int flags = byteBuffer.getInt();
+            byte[] originalData = byteBuffer.array();
+            return Optional.of(new CachedData(flags, originalData, originalData.length));
         }
-        return null;
-    }
-
-    private static byte[] intToBytes(final int i) {
-        ByteBuffer byteBuffer = ByteBuffer.allocate(EXTRA_HDR_LEN);
-        byteBuffer.putInt(i);
-        return byteBuffer.array();
-    }
-
-    private static int getFlags(byte[] data) {
-        byte[] flags = Arrays.copyOfRange(data, 0, EXTRA_HDR_LEN);
-        int flag = 0;
-        for (byte b: flags) {
-            flag = (flag << 8) + (b & 0xFF);
-        }
-        return flag;
-    }
-
-    private static byte[] getData(byte[] byteArray) {
-        return Arrays.copyOfRange(byteArray, EXTRA_HDR_LEN, byteArray.length);
+        return Optional.empty();
     }
 
     private static class TranscoderWrapper implements CacheTranscoder {
