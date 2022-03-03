@@ -21,6 +21,7 @@ import java.net.InetSocketAddress;
 import java.util.List;
 
 import momento.sdk.SimpleCacheClient;
+import momento.sdk.SimpleCacheClientBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,10 +40,13 @@ public class MomentoCacheClientFactory implements CacheClientFactory {
             momentoConfiguration = (MomentoConfiguration) conf;
         }
         if (momentoConfiguration != null && momentoConfiguration.getMomentoAuthToken() != null) {
-            SimpleCacheClient client = SimpleCacheClient.builder(
+            SimpleCacheClientBuilder builder = SimpleCacheClient.builder(
                         momentoConfiguration.getMomentoAuthToken(),
-                        momentoConfiguration.getDefaultTtl())
-                    .build();
+                        momentoConfiguration.getDefaultTtl());
+            if (momentoConfiguration.getRequestTimeout().isPresent()) {
+                builder.requestTimeout(momentoConfiguration.getRequestTimeout().get());
+            }
+            SimpleCacheClient client = builder.build();
             return new MomentoClientWrapper(client, momentoConfiguration.getCacheName());
         }
         throw new RuntimeException("Momento auth token must be provided in CacheConfiguration");
