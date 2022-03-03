@@ -234,7 +234,9 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
         if (cacheGetResponse.isPresent()) {
             ByteBuffer byteBuffer = ByteBuffer.wrap(cacheGetResponse.get());
             int flags = byteBuffer.getInt();
-            byte[] originalData = byteBuffer.array();
+            // Ensure we perform a deep copy of the remaining bytes into a separate byte array
+            byte[] originalData = new byte[byteBuffer.remaining()];
+            byteBuffer.get(originalData);
             return Optional.of(new CachedData(flags, originalData, originalData.length));
         }
         return Optional.empty();
