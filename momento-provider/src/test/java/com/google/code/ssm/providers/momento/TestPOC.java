@@ -68,7 +68,6 @@ public class TestPOC {
        String customerName;
     }
 
-
     @ReadThroughSingleCache(namespace = "TestString", expiration = 3600)
     @SneakyThrows
     public String getSimpleObject(@ParameterValueKeyProvider String complexObjectPk) {
@@ -95,7 +94,6 @@ public class TestPOC {
         // return getObjectFromSource(objectKey);
         return null;
     }
-
 
     @Test
     @SneakyThrows

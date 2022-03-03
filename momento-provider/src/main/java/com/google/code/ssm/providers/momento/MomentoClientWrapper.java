@@ -20,6 +20,7 @@ package com.google.code.ssm.providers.momento;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -91,13 +92,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     @Override
     public Object get(final String key) throws CacheException {
         try {
-            CacheTranscoder cacheTranscoder = getTranscoder();
-            CacheGetResponse response = momentoClient.get(defaultCacheName, key);
-            if (response.byteArray().isPresent()) {
-                byte[] returnedBytes = response.byteArray().get();
-                return cacheTranscoder.decode(new CachedObjectWrapper(new CachedData(getFlag(returnedBytes, 0), returnedBytes, returnedBytes.length)));
-            }
-            return null;
+            return readFromMomento(key);
         } catch (RuntimeException e) {
             throw new CacheException(e);
         }
@@ -106,14 +101,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     @Override
     public <T> T get(final String key, final CacheTranscoder transcoder) throws CacheException {
         try {
-            Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
-            CacheGetResponse response = momentoClient.get(defaultCacheName, key);
-            Optional<byte[]> cacheGetResponse = response.byteArray();
-            if (cacheGetResponse.isPresent()) {
-                byte[] returnedBytes = cacheGetResponse.get();
-                return cacheTranscoder.decode(new CachedData(getFlag(returnedBytes, 0), returnedBytes, returnedBytes.length));
-            }
-            return null;
+            return readFromMomento(key, transcoder);
         } catch (RuntimeException e) {
             throw new CacheException(e);
         }
@@ -124,14 +112,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     @Override
     public <T> T get(final String key, final CacheTranscoder transcoder, final long timeout) throws CacheException {
         try {
-            Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
-            CacheGetResponse response = momentoClient.get(defaultCacheName, key);
-            Optional<byte[]> cacheGetResponse = response.byteArray();
-            if (cacheGetResponse.isPresent()) {
-                byte[] returnedBytes = cacheGetResponse.get();
-                return cacheTranscoder.decode(new CachedData(getFlag(returnedBytes, 0), returnedBytes, returnedBytes.length));
-            }
-            return null;
+           return readFromMomento(key, transcoder);
         } catch (RuntimeException e) {
             throw new CacheException(e);
         }
@@ -171,9 +152,8 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     public boolean set(final String key, final int exp, final Object value) throws CacheException {
         try {
             CacheTranscoder transcoder = getTranscoder();
-            ByteBuffer buffer = ByteBuffer.wrap(transcoder.encode(value).getData());
-            CacheSetResponse response = momentoClient.set(defaultCacheName, key, buffer, exp);
-            return response != null;
+            CachedObject cachedObject = transcoder.encode(value);
+            return writeOutToMomento(key, exp, cachedObject.getFlags(), cachedObject.getData());
         } catch (RuntimeException e) {
             throw new CacheException(e);
         }
@@ -183,9 +163,8 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     public <T> boolean set(final String key, final int exp, final T value, final CacheTranscoder transcoder) throws CacheException {
         try {
             Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
-            ByteBuffer buffer = ByteBuffer.wrap(cacheTranscoder.encode(value).getData());
-            CacheSetResponse response = momentoClient.set(defaultCacheName, key, buffer, exp);
-            return response != null;
+            CachedData cachedData = cacheTranscoder.encode(value);
+            return writeOutToMomento(key, exp, cachedData.getFlags(), cachedData.getData());
         } catch (RuntimeException e) {
             throw new CacheException(e);
         }
@@ -217,11 +196,67 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
         return transcoderAdapter;
     }
 
-    private static int getFlag(byte[] data, int i) {
-        return (data[i] & 0xff) << 24
-                | (data[i + 1] & 0xff) << 16
-                | (data[i + 2] & 0xff) << 8
-                | (data[i + 3] & 0xff);
+    // Helper function that concats the CachedObject to raw bytes before calling `set`.
+    // This helps maintain our serialization flags so that we can deserialize the object upon a `get`
+    private boolean writeOutToMomento(final String key, final int exp, final int flagsUsed, final byte[] data) {
+        final byte[] flags = intToBytes(flagsUsed);
+        ByteBuffer buffer = ByteBuffer.allocate(flags.length + data.length);
+        buffer.put(flags);
+        buffer.put(data);
+        buffer.rewind();
+        CacheSetResponse response = momentoClient.set(defaultCacheName, key, buffer.asReadOnlyBuffer(), exp);
+        return response != null;
+    }
+
+    // Helper function that reads the raw bytes from Momento and splits up the bytes
+    // to extract the serialization flags we used as well as the raw bytes of data that contain our
+    // actual object
+    private <T> T readFromMomento(final String key, final CacheTranscoder transcoder) {
+        Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
+        CacheGetResponse response = momentoClient.get(defaultCacheName, key);
+        Optional<byte[]> cacheGetResponse = response.byteArray();
+        if (cacheGetResponse.isPresent()) {
+            byte[] returnedBytes = cacheGetResponse.get();
+            int flags = getFlags(returnedBytes);
+            byte[] originalData = getData(returnedBytes);
+            return cacheTranscoder.decode(new CachedData(flags, originalData, originalData.length));
+        }
+        return null;
+    }
+
+    // Helper function that reads the raw bytes from Momento and splits up the bytes
+    // to extract the serialization flags we used as well as the raw bytes of data that contain our
+    // actual object, uses our default Transcoder
+    private Object readFromMomento(final String key) {
+        CacheTranscoder cacheTranscoder = getTranscoder();
+        CacheGetResponse response = momentoClient.get(defaultCacheName, key);
+        Optional<byte[]> cacheGetResponse = response.byteArray();
+        if (cacheGetResponse.isPresent()) {
+            byte[] returnedBytes = cacheGetResponse.get();
+            int flags = getFlags(returnedBytes);
+            byte[] originalData = getData(returnedBytes);
+            return cacheTranscoder.decode(new CachedObjectWrapper(new CachedData(flags, originalData, originalData.length)));
+        }
+        return null;
+    }
+
+    private static byte[] intToBytes(final int i) {
+        ByteBuffer byteBuffer = ByteBuffer.allocate(EXTRA_HDR_LEN);
+        byteBuffer.putInt(i);
+        return byteBuffer.array();
+    }
+
+    private static int getFlags(byte[] data) {
+        byte[] flags = Arrays.copyOfRange(data, 0, EXTRA_HDR_LEN);
+        int flag = 0;
+        for (byte b: flags) {
+            flag = (flag << 8) + (b & 0xFF);
+        }
+        return flag;
+    }
+
+    private static byte[] getData(byte[] byteArray) {
+        return Arrays.copyOfRange(byteArray, EXTRA_HDR_LEN, byteArray.length);
     }
 
     private static class TranscoderWrapper implements CacheTranscoder {
