@@ -7,6 +7,7 @@ import com.google.code.ssm.api.ParameterValueKeyProvider;
 import com.google.code.ssm.api.ReadThroughSingleCache;
 import com.google.code.ssm.api.format.SerializationType;
 import com.google.code.ssm.config.AbstractSSMConfiguration;
+import com.google.code.ssm.providers.CacheException;
 import lombok.Data;
 import lombok.SneakyThrows;
 import org.junit.Ignore;
@@ -20,6 +21,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
 import java.io.Serializable;
+import java.util.concurrent.TimeoutException;
 
 
 @RunWith(SpringJUnit4ClassRunner.class)
@@ -68,7 +70,6 @@ public class TestPOC {
        String customerName;
     }
 
-
     @ReadThroughSingleCache(namespace = "TestString", expiration = 3600)
     @SneakyThrows
     public String getSimpleObject(@ParameterValueKeyProvider String complexObjectPk) {
@@ -96,10 +97,9 @@ public class TestPOC {
         return null;
     }
 
-
     @Test
     @SneakyThrows
-    @Ignore // Comment out if you'd like to test this out yourself
+//    @Ignore // Comment out if you'd like to test this out yourself
     public void testPocSimple() {
         String result = getSimpleObject("test-key");
         if (result == null) {
@@ -113,11 +113,26 @@ public class TestPOC {
     @SneakyThrows
     @Ignore // Comment out if you'd like to test this out yourself
     public void testPocComplex() {
+        // Uncomment if you want to verify objects are de/serialized properly
+        // putTestObjectInCache();
         TestObject result = getComplexObject("test-complex-key");
         if (result == null) {
             System.out.println("Nothing found");
         } else {
             System.out.println("Got " + result);
         }
+    }
+
+    // This can only be used if you have a valid MOMENTO_AUTH_TOKEN in your environment
+    // along with a cache created named "example-cache"
+    private void putTestObjectInCache() throws CacheException, TimeoutException {
+        SubObject subObject = new SubObject();
+        subObject.setCustomerId("abc123");
+        subObject.setCustomerName("customerName");
+        TestObject testObject = new TestObject();
+        testObject.setName("testObjectName");
+        testObject.setId(42);
+        testObject.setSubObject(subObject);
+        exampleCacheFactory.getCache().set("test-complex-key", 30, testObject, SerializationType.PROVIDER);
     }
 }

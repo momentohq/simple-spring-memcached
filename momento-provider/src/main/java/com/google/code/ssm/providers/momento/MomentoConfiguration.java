@@ -24,6 +24,9 @@ import net.spy.memcached.transcoders.Transcoder;
 
 import com.google.code.ssm.providers.CacheConfiguration;
 
+import java.time.Duration;
+import java.util.Optional;
+
 
 @Data
 @EqualsAndHashCode(callSuper = true)
@@ -31,6 +34,7 @@ public class MomentoConfiguration extends CacheConfiguration {
     private String momentoAuthToken;
     private String cacheName;
     private int defaultTtl = 300;
+    private Optional<Duration> requestTimeout = Optional.empty();
 
     /**
      * default transcoder or null if not set
