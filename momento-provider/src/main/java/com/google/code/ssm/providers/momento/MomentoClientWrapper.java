@@ -80,7 +80,18 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
 
     @Override
     public boolean delete(final String key) throws CacheException {
-        throw new CacheException(new RuntimeException("not implemented"));
+        try {
+            CacheTranscoder transcoder = getTranscoder();
+            CachedObject cachedObject = transcoder.encode(""); // Default to empty string for now on delete
+            return writeOutToMomento(
+                    key,
+                    1,  // Default to 1 second ttl for now on delete
+                    cachedObject.getFlags(),
+                    cachedObject.getData()
+            );
+        } catch (RuntimeException e) {
+            throw new CacheException(e);
+        }
     }
 
     @Override
