@@ -20,14 +20,12 @@ package com.google.code.ssm.providers.momento;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Optional;
 import java.util.concurrent.TimeoutException;
 
-import com.google.code.ssm.Cache;
 import com.google.code.ssm.providers.momento.transcoders.SerializingTranscoder;
 import com.google.code.ssm.providers.momento.transcoders.Transcoder;
 import momento.sdk.SimpleCacheClient;
