@@ -233,8 +233,15 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     private Object readFromMomento(final String key) {
         CacheTranscoder cacheTranscoder = getTranscoder();
         Optional<CachedData> maybeCachedData = performGet(key);
-        return maybeCachedData.map(cachedData -> cacheTranscoder.decode(new CachedObjectWrapper(cachedData)))
+
+        Object data = maybeCachedData.map(cachedData -> cacheTranscoder.decode(new CachedObjectWrapper(cachedData)))
                 .orElse(null);
+        if (data == null){
+            LOGGER.debug("MISS: no item found in cache for key: " + key);
+        }else {
+            LOGGER.debug("HIT: item found in cache for key: " + key);
+        }
+        return data;
     }
 
     private Optional<CachedData> performGet(final String key) {
