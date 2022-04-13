@@ -5,7 +5,7 @@
     <groupId>com.google.code.simple-spring-memcached</groupId>
     <artifactId>simple-spring-memcached-parent</artifactId>
     <packaging>pom</packaging>
-    <version>4.2.6-SNAPSHOT</version>
+    <version>4.2.7-SNAPSHOT</version>
     <name>simple-spring-memcached-parent</name>
     <description>Simple spring memcached - parent</description>
     <url>http://github.com/momentohq/simple-spring-memcached</url>

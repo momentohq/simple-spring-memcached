@@ -83,12 +83,14 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
         try {
             CacheTranscoder transcoder = getTranscoder();
             CachedObject cachedObject = transcoder.encode(""); // Default to empty string for now on delete
-            return writeOutToMomento(
+            boolean result = writeOutToMomento(
                     key,
                     1,  // Default to 1 second ttl for now on delete
                     cachedObject.getFlags(),
                     cachedObject.getData()
             );
+            accessLogWrite("Delete", key, result);
+            return result;
         } catch (RuntimeException e) {
             throw new CacheException(e);
         }
@@ -102,7 +104,9 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     @Override
     public Object get(final String key) throws CacheException {
         try {
-            return readFromMomento(key);
+            Object data = readFromMomento(key);
+            accessLogRead("Get", key, data);
+            return data;
         } catch (RuntimeException e) {
             throw new CacheException(e);
         }
@@ -111,7 +115,9 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     @Override
     public <T> T get(final String key, final CacheTranscoder transcoder) throws CacheException {
         try {
-            return readFromMomento(key, transcoder);
+            T data = readFromMomento(key, transcoder);
+            accessLogRead("Get", key, data);
+            return data;
         } catch (RuntimeException e) {
             throw new CacheException(e);
         }
@@ -122,7 +128,9 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     @Override
     public <T> T get(final String key, final CacheTranscoder transcoder, final long timeout) throws CacheException {
         try {
-           return readFromMomento(key, transcoder);
+            T data = readFromMomento(key, transcoder);
+            accessLogRead("Get", key, data);
+            return data;
         } catch (RuntimeException e) {
             throw new CacheException(e);
         }
@@ -163,7 +171,9 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
         try {
             CacheTranscoder transcoder = getTranscoder();
             CachedObject cachedObject = transcoder.encode(value);
-            return writeOutToMomento(key, exp, cachedObject.getFlags(), cachedObject.getData());
+            boolean result = writeOutToMomento(key, exp, cachedObject.getFlags(), cachedObject.getData());
+            accessLogWrite("Set", key, result);
+            return result;
         } catch (RuntimeException e) {
             throw new CacheException(e);
         }
@@ -174,7 +184,9 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
         try {
             Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
             CachedData cachedData = cacheTranscoder.encode(value);
-            return writeOutToMomento(key, exp, cachedData.getFlags(), cachedData.getData());
+            boolean result = writeOutToMomento(key, exp, cachedData.getFlags(), cachedData.getData());
+            accessLogWrite("Set", key, result);
+            return result;
         } catch (RuntimeException e) {
             throw new CacheException(e);
         }
@@ -233,15 +245,8 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     private Object readFromMomento(final String key) {
         CacheTranscoder cacheTranscoder = getTranscoder();
         Optional<CachedData> maybeCachedData = performGet(key);
-
-        Object data = maybeCachedData.map(cachedData -> cacheTranscoder.decode(new CachedObjectWrapper(cachedData)))
+        return maybeCachedData.map(cachedData -> cacheTranscoder.decode(new CachedObjectWrapper(cachedData)))
                 .orElse(null);
-        if (data == null){
-            LOGGER.debug("MISS: no item found in cache for key: " + key);
-        }else {
-            LOGGER.debug("HIT: item found in cache for key: " + key);
-        }
-        return data;
     }
 
     private Optional<CachedData> performGet(final String key) {
@@ -256,6 +261,22 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
             return Optional.of(new CachedData(flags, originalData, originalData.length));
         }
         return Optional.empty();
+    }
+
+    private void accessLogRead(String method, String key, Object data){
+        if (data == null){
+            LOGGER.debug(method + ": MISS: no item found in cache for key: " + key);
+        }else {
+            LOGGER.debug(method + ": HIT: item found in cache for key: " + key);
+        }
+    }
+
+    private void accessLogWrite(String method, String key, boolean writeSuccess){
+        if (writeSuccess){
+            LOGGER.debug(method + ": SetSuccess: item stored in cache for key: " + key);
+        }else {
+            LOGGER.debug(method + ": SetFailure: item not stored in cache empty response for key: " + key);
+        }
     }
 
     private static class TranscoderWrapper implements CacheTranscoder {
