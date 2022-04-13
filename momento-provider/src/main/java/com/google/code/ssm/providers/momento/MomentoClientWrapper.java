@@ -89,7 +89,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
                     cachedObject.getFlags(),
                     cachedObject.getData()
             );
-            accessLogWrite("Delete", key, result);
+            accessLogWrite("Delete", key, result, cachedObject.getData().length);
             return result;
         } catch (RuntimeException e) {
             throw new CacheException(e);
@@ -172,7 +172,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
             CacheTranscoder transcoder = getTranscoder();
             CachedObject cachedObject = transcoder.encode(value);
             boolean result = writeOutToMomento(key, exp, cachedObject.getFlags(), cachedObject.getData());
-            accessLogWrite("Set", key, result);
+            accessLogWrite("Set", key, result, cachedObject.getData().length);
             return result;
         } catch (RuntimeException e) {
             throw new CacheException(e);
@@ -185,7 +185,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
             Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
             CachedData cachedData = cacheTranscoder.encode(value);
             boolean result = writeOutToMomento(key, exp, cachedData.getFlags(), cachedData.getData());
-            accessLogWrite("Set", key, result);
+            accessLogWrite("Set", key, result, cachedData.getData().length);
             return result;
         } catch (RuntimeException e) {
             throw new CacheException(e);
@@ -263,19 +263,19 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
         return Optional.empty();
     }
 
-    private void accessLogRead(String method, String key, Object data){
-        if (data == null){
+    private void accessLogRead(String method, String key, Object data) {
+        if (data == null) {
             LOGGER.debug(method + ": MISS: no item found in cache for key: " + key);
-        }else {
+        } else {
             LOGGER.debug(method + ": HIT: item found in cache for key: " + key);
         }
     }
 
-    private void accessLogWrite(String method, String key, boolean writeSuccess){
-        if (writeSuccess){
-            LOGGER.debug(method + ": SetSuccess: item stored in cache for key: " + key);
-        }else {
-            LOGGER.debug(method + ": SetFailure: item not stored in cache empty response for key: " + key);
+    private void accessLogWrite(String method, String key, boolean writeSuccess, int size) {
+        if (writeSuccess) {
+            LOGGER.debug(method + ": SetSuccess: item stored in cache key: + " + key + " value_size: " + size);
+        } else {
+            LOGGER.debug(method + ": SetFailure: item not stored in cache empty response for key: " + key + " value_size: " + size);
         }
     }
 
