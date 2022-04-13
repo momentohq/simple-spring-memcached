@@ -273,7 +273,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
 
     private void accessLogWrite(String method, String key, boolean writeSuccess, int size) {
         if (writeSuccess) {
-            LOGGER.debug(method + ": SetSuccess: item stored in cache key: + " + key + " value_size: " + size);
+            LOGGER.debug(method + ": SetSuccess: item stored in cache key: " + key + " value_size: " + size);
         } else {
             LOGGER.debug(method + ": SetFailure: item not stored in cache empty response for key: " + key + " value_size: " + size);
         }
