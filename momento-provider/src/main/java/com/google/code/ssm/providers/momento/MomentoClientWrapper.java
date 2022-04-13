@@ -130,7 +130,8 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
         try {
             T data = readFromMomento(key, transcoder);
             accessLogRead("Get", key, data);
-            return data;        } catch (RuntimeException e) {
+            return data;
+        } catch (RuntimeException e) {
             throw new CacheException(e);
         }
     }
