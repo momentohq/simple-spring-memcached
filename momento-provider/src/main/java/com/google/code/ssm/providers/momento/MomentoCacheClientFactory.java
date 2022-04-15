@@ -40,14 +40,20 @@ public class MomentoCacheClientFactory implements CacheClientFactory {
             momentoConfiguration = (MomentoConfiguration) conf;
         }
         if (momentoConfiguration != null && momentoConfiguration.getMomentoAuthToken() != null) {
+
             SimpleCacheClientBuilder builder = SimpleCacheClient.builder(
-                        momentoConfiguration.getMomentoAuthToken(),
-                        momentoConfiguration.getDefaultTtl());
+                    momentoConfiguration.getMomentoAuthToken(),
+                    momentoConfiguration.getDefaultTtl()
+            );
             if (momentoConfiguration.getRequestTimeout().isPresent()) {
                 builder.requestTimeout(momentoConfiguration.getRequestTimeout().get());
             }
             SimpleCacheClient client = builder.build();
-            return new MomentoClientWrapper(client, momentoConfiguration.getCacheName());
+            return new MomentoClientWrapper(
+                    client,
+                    momentoConfiguration.getCacheName(),
+                    momentoConfiguration.getDefaultTtl()
+            );
         }
         throw new RuntimeException("Momento auth token must be provided in CacheConfiguration");
     }

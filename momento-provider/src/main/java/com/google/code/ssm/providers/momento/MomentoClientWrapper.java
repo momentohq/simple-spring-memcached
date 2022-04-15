@@ -51,11 +51,13 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     private final Map<CacheTranscoder, Transcoder<Object>> adapters = new HashMap<>();
 
     private final String defaultCacheName;
+    private final int defaultTTL;
     private final SimpleCacheClient momentoClient;
 
-    MomentoClientWrapper(final SimpleCacheClient momentoClient, final String defaultCacheName) {
+    MomentoClientWrapper(final SimpleCacheClient momentoClient, final String defaultCacheName, int defaultTTL) {
         this.momentoClient = momentoClient;
         this.defaultCacheName = defaultCacheName;
+        this.defaultTTL = defaultTTL;
     }
 
     @Override
@@ -82,11 +84,10 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     @Override
     public boolean delete(final String key) throws CacheException {
         try {
-            CacheTranscoder transcoder = getTranscoder();
-            CachedObject cachedObject = transcoder.encode(""); // Default to empty string for now on delete
+            CachedObject cachedObject = getTranscoder().encode(""); // Default to empty string for now on delete
             boolean result = writeOutToMomento(
                     key,
-                    1,  // Default to 1 second ttl for now on delete
+                    1,  // Default to 1 second ttl for now on delete till we add to sdk
                     cachedObject.getFlags(),
                     cachedObject.getData()
             );
@@ -170,10 +171,14 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     @Override
     public boolean set(final String key, final int exp, final Object value) throws CacheException {
         try {
-            CacheTranscoder transcoder = getTranscoder();
-            CachedObject cachedObject = transcoder.encode(value);
-            boolean result = writeOutToMomento(key, exp, cachedObject.getFlags(), cachedObject.getData());
-            accessLogWrite("Set", key, result, cachedObject.getData().length, exp);
+            CachedObject cachedObject = getTranscoder().encode(value);
+
+            // simple spring memcache defaults exp(ttl) to 0 which momento treats as invalidate immediately,
+            // so we set default ttl here if we are passed 0
+            int ttl = exp == 0 ? defaultTTL : exp;
+
+            boolean result = writeOutToMomento(key, ttl, cachedObject.getFlags(), cachedObject.getData());
+            accessLogWrite("Set", key, result, cachedObject.getData().length, ttl);
             return result;
         } catch (RuntimeException e) {
             throw new CacheException(e);
@@ -183,10 +188,14 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     @Override
     public <T> boolean set(final String key, final int exp, final T value, final CacheTranscoder transcoder) throws CacheException {
         try {
-            Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
-            CachedData cachedData = cacheTranscoder.encode(value);
-            boolean result = writeOutToMomento(key, exp, cachedData.getFlags(), cachedData.getData());
-            accessLogWrite("Set", key, result, cachedData.getData().length, exp);
+            CachedData cachedData = getTranscoder(transcoder).encode(value);
+
+            // simple spring memcache defaults exp(ttl) to 0 which momento treats as invalidate immediately,
+            // so we set default ttl here if we are passed 0
+            int ttl = exp == 0 ? defaultTTL : exp;
+
+            boolean result = writeOutToMomento(key, ttl, cachedData.getFlags(), cachedData.getData());
+            accessLogWrite("Set", key, result, cachedData.getData().length, ttl);
             return result;
         } catch (RuntimeException e) {
             throw new CacheException(e);
