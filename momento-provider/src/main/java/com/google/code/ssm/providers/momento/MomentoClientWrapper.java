@@ -19,6 +19,7 @@ package com.google.code.ssm.providers.momento;
 
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.text.MessageFormat;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -89,7 +90,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
                     cachedObject.getFlags(),
                     cachedObject.getData()
             );
-            accessLogWrite("Delete", key, result, cachedObject.getData().length);
+            accessLogWrite("Delete", key, result, cachedObject.getData().length, 1);
             return result;
         } catch (RuntimeException e) {
             throw new CacheException(e);
@@ -172,7 +173,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
             CacheTranscoder transcoder = getTranscoder();
             CachedObject cachedObject = transcoder.encode(value);
             boolean result = writeOutToMomento(key, exp, cachedObject.getFlags(), cachedObject.getData());
-            accessLogWrite("Set", key, result, cachedObject.getData().length);
+            accessLogWrite("Set", key, result, cachedObject.getData().length, exp);
             return result;
         } catch (RuntimeException e) {
             throw new CacheException(e);
@@ -185,7 +186,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
             Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
             CachedData cachedData = cacheTranscoder.encode(value);
             boolean result = writeOutToMomento(key, exp, cachedData.getFlags(), cachedData.getData());
-            accessLogWrite("Set", key, result, cachedData.getData().length);
+            accessLogWrite("Set", key, result, cachedData.getData().length, exp);
             return result;
         } catch (RuntimeException e) {
             throw new CacheException(e);
@@ -265,17 +266,29 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
 
     private void accessLogRead(String method, String key, Object data) {
         if (data == null) {
-            LOGGER.debug(method + ": MISS: no item found in cache for key: " + key);
+            LOGGER.debug(MessageFormat.format(
+                    "{0}: MISS: no item found in cache for key: {1}",
+                    method, key
+            ));
         } else {
-            LOGGER.debug(method + ": HIT: item found in cache for key: " + key);
+            LOGGER.debug(MessageFormat.format(
+                    "{0}: HIT: item found in cache for key: {1}",
+                    method, key
+            ));
         }
     }
 
-    private void accessLogWrite(String method, String key, boolean writeSuccess, int size) {
+    private void accessLogWrite(String method, String key, boolean writeSuccess, int size, int ttl) {
         if (writeSuccess) {
-            LOGGER.debug(method + ": SetSuccess: item stored in cache key: " + key + " value_size: " + size);
+            LOGGER.debug(MessageFormat.format(
+                    "{0}: SetSuccess: item stored in cache key: {1} value_size: {2} ttl: {3}",
+                    method, key, size, ttl
+            ));
         } else {
-            LOGGER.debug(method + ": SetFailure: item not stored in cache empty response for key: " + key + " value_size: " + size);
+            LOGGER.debug(MessageFormat.format(
+                    "{0}: SetFailure: item not stored in cache empty response for key: {1} value_size: {2} ttl: {3}",
+                    method, key, size, ttl
+            ));
         }
     }
 
