@@ -177,8 +177,8 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
             // so we set default ttl here if we are passed 0
             int ttl = exp == 0 ? defaultTTL : exp;
 
-            boolean result = writeOutToMomento(key, exp, cachedObject.getFlags(), cachedObject.getData());
-            accessLogWrite("Set", key, result, cachedObject.getData().length, exp);
+            boolean result = writeOutToMomento(key, ttl, cachedObject.getFlags(), cachedObject.getData());
+            accessLogWrite("Set", key, result, cachedObject.getData().length, ttl);
             return result;
         } catch (RuntimeException e) {
             throw new CacheException(e);
