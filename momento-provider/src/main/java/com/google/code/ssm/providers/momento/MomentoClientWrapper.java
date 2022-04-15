@@ -87,11 +87,11 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
             CachedObject cachedObject = getTranscoder().encode(""); // Default to empty string for now on delete
             boolean result = writeOutToMomento(
                     key,
-                    0,  // ttl of 0 invalidates immediately with momento cache
+                    1,  // Default to 1 second ttl for now on delete till we add to sdk
                     cachedObject.getFlags(),
                     cachedObject.getData()
             );
-            accessLogWrite("Delete", key, result, cachedObject.getData().length, 0);
+            accessLogWrite("Delete", key, result, cachedObject.getData().length, 1);
             return result;
         } catch (RuntimeException e) {
             throw new CacheException(e);
