@@ -84,15 +84,9 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     @Override
     public boolean delete(final String key) throws CacheException {
         try {
-            CachedObject cachedObject = getTranscoder().encode(""); // Default to empty string for now on delete
-            boolean result = writeOutToMomento(
-                    key,
-                    1,  // Default to 1 second ttl for now on delete till we add to sdk
-                    cachedObject.getFlags(),
-                    cachedObject.getData()
-            );
-            accessLogWrite("Delete", key, result, cachedObject.getData().length, 1);
-            return result;
+            momentoClient.delete(defaultCacheName, key);
+            LOGGER.debug(MessageFormat.format("Delete: Success Item removed from cache key: {1}", key));
+            return true;
         } catch (RuntimeException e) {
             throw new CacheException(e);
         }
@@ -178,7 +172,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
             int ttl = exp == 0 ? defaultTTL : exp;
 
             boolean result = writeOutToMomento(key, ttl, cachedObject.getFlags(), cachedObject.getData());
-            accessLogWrite("Set", key, result, cachedObject.getData().length, ttl);
+            accessLogWrite("Set", key, result, cachedObject.getData().length, ttl, cachedObject.getFlags());
             return result;
         } catch (RuntimeException e) {
             throw new CacheException(e);
@@ -195,7 +189,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
             int ttl = exp == 0 ? defaultTTL : exp;
 
             boolean result = writeOutToMomento(key, ttl, cachedData.getFlags(), cachedData.getData());
-            accessLogWrite("Set", key, result, cachedData.getData().length, ttl);
+            accessLogWrite("Set", key, result, cachedData.getData().length, ttl, cachedData.getFlags());
             return result;
         } catch (RuntimeException e) {
             throw new CacheException(e);
@@ -287,16 +281,16 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
         }
     }
 
-    private void accessLogWrite(String method, String key, boolean writeSuccess, int size, int ttl) {
+    private void accessLogWrite(String method, String key, boolean writeSuccess, int size, int ttl, int flags) {
         if (writeSuccess) {
             LOGGER.debug(MessageFormat.format(
-                    "{0}: SetSuccess: item stored in cache key: {1} value_size: {2} ttl: {3}",
-                    method, key, size, ttl
+                    "{0}: SetSuccess: item stored in cache key: {1} value_size: {2} ttl: {3} flags: {4}",
+                    method, key, size, ttl, flags
             ));
         } else {
             LOGGER.debug(MessageFormat.format(
-                    "{0}: SetFailure: item not stored in cache empty response for key: {1} value_size: {2} ttl: {3}",
-                    method, key, size, ttl
+                    "{0}: SetFailure: item not stored in cache empty response for key: {1} value_size: {2} ttl: {3} flags: {4}",
+                    method, key, size, ttl, flags
             ));
         }
     }
