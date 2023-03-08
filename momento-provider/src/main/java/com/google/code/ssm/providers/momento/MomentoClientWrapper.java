@@ -325,7 +325,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     }
 
     private Set<Set<String>> splitKeyset(final Collection<String> keys) {
-        final int chunkSize = 10; // TODO: make configurable?
+        final int chunkSize = 50;
         final Set<Set<String>> keyChunks = new HashSet<>();
 
         final Spliterator<String> split = keys.spliterator();
