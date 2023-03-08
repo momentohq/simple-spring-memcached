@@ -17,31 +17,23 @@
 
 package com.google.code.ssm.providers.momento;
 
-import java.net.SocketAddress;
-import java.nio.ByteBuffer;
-import java.text.MessageFormat;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.Optional;
-import java.util.concurrent.TimeoutException;
-
+import com.google.code.ssm.providers.*;
 import com.google.code.ssm.providers.momento.transcoders.SerializingTranscoder;
 import com.google.code.ssm.providers.momento.transcoders.Transcoder;
 import momento.sdk.SimpleCacheClient;
 import momento.sdk.messages.CacheGetResponse;
 import momento.sdk.messages.CacheSetResponse;
 import net.spy.memcached.CachedData;
-
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.google.code.ssm.providers.AbstractMemcacheClientWrapper;
-import com.google.code.ssm.providers.CacheException;
-import com.google.code.ssm.providers.CacheTranscoder;
-import com.google.code.ssm.providers.CachedObject;
-import com.google.code.ssm.providers.CachedObjectImpl;
+import java.net.SocketAddress;
+import java.nio.ByteBuffer;
+import java.text.MessageFormat;
+import java.util.*;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeoutException;
+import java.util.stream.Collectors;
 
 class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
 
@@ -139,12 +131,20 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
 
     @Override
     public Map<String, Object> getBulk(final Collection<String> keys) throws CacheException {
-        throw new CacheException(new RuntimeException("not implemented"));
+        try {
+            return readFromMomento(keys);
+        } catch (RuntimeException e) {
+            throw new CacheException(e);
+        }
     }
 
     @Override
     public <T> Map<String, T> getBulk(final Collection<String> keys, final CacheTranscoder transcoder) throws CacheException {
-        throw new CacheException(new RuntimeException("not implemented"));
+        try {
+            return readFromMomento(keys, transcoder);
+        } catch (RuntimeException e) {
+            throw new CacheException(e);
+        }
     }
 
     @Override
@@ -253,18 +253,96 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
                 .orElse(null);
     }
 
+    // Helper function that mimics multi-get by asynchronously calling get on all the keys. Large enough sets of keys
+    // are split into chunks to prevent too many simultaneous calls.
+    private <T> Map<String, T> readFromMomento(final Collection<String> keys, final CacheTranscoder transcoder) {
+        final Transcoder<T> cacheTranscoder = getTranscoder(transcoder);
+
+        final Set<Set<String>> keyChunks = splitKeyset(keys);
+
+        final Map<String, T> output = new HashMap<>();
+        for (Set<String> keyChunk : keyChunks) {
+            final Map<String, CachedData> cachedData = performMultiGet(keyChunk);
+            for (Map.Entry<String, CachedData> entry : cachedData.entrySet()) {
+                output.put(entry.getKey(), cacheTranscoder.decode(entry.getValue()));
+            }
+        }
+
+        return output;
+    }
+
+    // Helper function that mimics multi-get by asynchronously calling get on all the keys. Large enough sets of keys
+    // are split into chunks to prevent too many simultaneous calls.
+    private Map<String, Object> readFromMomento(final Collection<String> keys) {
+        final CacheTranscoder cacheTranscoder = getTranscoder();
+
+        final Set<Set<String>> keyChunks = splitKeyset(keys);
+
+        final Map<String, Object> output = new HashMap<>();
+        for (Set<String> keyChunk : keyChunks) {
+            final Map<String, CachedData> cachedData = performMultiGet(keyChunk);
+            for (Map.Entry<String, CachedData> entry : cachedData.entrySet()) {
+                output.put(entry.getKey(), cacheTranscoder.decode(new CachedObjectWrapper(entry.getValue())));
+            }
+        }
+
+        return output;
+    }
+
     private Optional<CachedData> performGet(final String key) {
         CacheGetResponse response = momentoClient.get(defaultCacheName, key);
         Optional<byte[]> cacheGetResponse = response.byteArray();
-        if (cacheGetResponse.isPresent()) {
-            ByteBuffer byteBuffer = ByteBuffer.wrap(cacheGetResponse.get());
-            int flags = byteBuffer.getInt();
-            // Ensure we perform a deep copy of the remaining bytes into a separate byte array
-            byte[] originalData = new byte[byteBuffer.remaining()];
-            byteBuffer.get(originalData);
-            return Optional.of(new CachedData(flags, originalData, originalData.length));
+        return cacheGetResponse.map(this::convertToCachedData);
+    }
+
+    private Map<String, CachedData> performMultiGet(final Collection<String> keys) {
+        final Map<String, CompletableFuture<Optional<byte[]>>> futureMap = keys.stream()
+                .collect(Collectors.toMap(key -> key, key -> momentoClient.getAsync(defaultCacheName, key)
+                        .thenApply(CacheGetResponse::byteArray)));
+
+        final Map<String, CachedData> result = new HashMap<>();
+        for (Map.Entry<String, CompletableFuture<Optional<byte[]>>> entry : futureMap.entrySet()) {
+            final Optional<byte[]> bytesOpt = entry.getValue().join();
+            if (bytesOpt.isPresent()) {
+                final byte[] bytes = bytesOpt.get();
+                accessLogRead("Multiget", entry.getKey(), bytes);
+                result.put(entry.getKey(), convertToCachedData(bytes));
+            } else {
+                accessLogRead("Multiget", entry.getKey(), null);
+            }
         }
-        return Optional.empty();
+
+        return result;
+    }
+
+    private CachedData convertToCachedData(final byte[] bytes) {
+        ByteBuffer byteBuffer = ByteBuffer.wrap(bytes);
+        int flags = byteBuffer.getInt();
+        // Ensure we perform a deep copy of the remaining bytes into a separate byte array
+        byte[] originalData = new byte[byteBuffer.remaining()];
+        byteBuffer.get(originalData);
+        return new CachedData(flags, originalData, originalData.length);
+    }
+
+    private Set<Set<String>> splitKeyset(final Collection<String> keys) {
+        final int chunkSize = 50;
+        final Set<Set<String>> keyChunks = new HashSet<>();
+
+        final Spliterator<String> split = keys.spliterator();
+        while (true) {
+            final Set<String> keyChunk = new HashSet<>(chunkSize);
+            for (int i = 0; i < chunkSize; ++i) {
+                if (!split.tryAdvance(keyChunk::add)) {
+                    break;
+                }
+            }
+            if (keyChunk.isEmpty()) {
+                break;
+            }
+            keyChunks.add(keyChunk);
+        }
+
+        return keyChunks;
     }
 
     private void accessLogRead(String method, String key, Object data) {
