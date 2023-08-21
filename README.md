@@ -19,13 +19,22 @@ This project enables caching in Spring-managed beans, by using Java 5 Annotation
 
 ## Usage ##
 
+Add the repository for the Momento snapshot version:
+
+    <repositories>
+      <repository>
+        <id>sonatype-snapshots</id>
+        <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+      </repository>
+    </repositories>
+
 If you are using maven, you can try it now:
 
     <dependencies>
        <dependency>
-         <groupId>com.google.code.simple-spring-memcached</groupId>
+         <groupId>software.momento.java.spring</groupId>
          <artifactId>xmemcached-provider</artifactId>
-         <version>4.1.3</version>
+         <version>4.2.14-SNAPSHOT</version>
        </dependency> 
     </dependencies>
 
