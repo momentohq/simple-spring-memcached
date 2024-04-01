@@ -18,16 +18,19 @@
 package com.google.code.ssm.providers.momento;
 
 import java.net.InetSocketAddress;
+import java.time.Duration;
 import java.util.List;
 
-import momento.sdk.SimpleCacheClient;
-import momento.sdk.SimpleCacheClientBuilder;
+import momento.sdk.auth.CredentialProvider;
+import momento.sdk.config.Configuration;
+import momento.sdk.config.Configurations;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import com.google.code.ssm.providers.CacheClient;
 import com.google.code.ssm.providers.CacheClientFactory;
 import com.google.code.ssm.providers.CacheConfiguration;
+import sun.security.krb5.internal.ccache.Credentials;
 
 public class MomentoCacheClientFactory implements CacheClientFactory {
 
@@ -41,14 +44,16 @@ public class MomentoCacheClientFactory implements CacheClientFactory {
         }
         if (momentoConfiguration != null && momentoConfiguration.getMomentoAuthToken() != null) {
 
-            SimpleCacheClientBuilder builder = SimpleCacheClient.builder(
-                    momentoConfiguration.getMomentoAuthToken(),
-                    momentoConfiguration.getDefaultTtl()
-            );
+            Configuration config = Configurations.InRegion.latest();
             if (momentoConfiguration.getRequestTimeout().isPresent()) {
-                builder.requestTimeout(momentoConfiguration.getRequestTimeout().get());
+                config = config.withTimeout(momentoConfiguration.getRequestTimeout().get());
             }
-            SimpleCacheClient client = builder.build();
+
+            final momento.sdk.CacheClient client = momento.sdk.CacheClient.create(
+                    CredentialProvider.fromString(momentoConfiguration.getMomentoAuthToken()),
+                    config,
+                    Duration.ofSeconds(momentoConfiguration.getDefaultTtl())
+            );
             return new MomentoClientWrapper(
                     client,
                     momentoConfiguration.getCacheName(),

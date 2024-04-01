@@ -20,16 +20,17 @@ package com.google.code.ssm.providers.momento;
 import com.google.code.ssm.providers.*;
 import com.google.code.ssm.providers.momento.transcoders.SerializingTranscoder;
 import com.google.code.ssm.providers.momento.transcoders.Transcoder;
-import momento.sdk.SimpleCacheClient;
-import momento.sdk.messages.CacheGetResponse;
-import momento.sdk.messages.CacheSetResponse;
+import momento.sdk.responses.cache.GetResponse;
+import momento.sdk.responses.cache.SetResponse;
 import net.spy.memcached.CachedData;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.text.MessageFormat;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeoutException;
@@ -44,9 +45,9 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
 
     private final String defaultCacheName;
     private final int defaultTTL;
-    private final SimpleCacheClient momentoClient;
+    private final momento.sdk.CacheClient momentoClient;
 
-    MomentoClientWrapper(final SimpleCacheClient momentoClient, final String defaultCacheName, int defaultTTL) {
+    MomentoClientWrapper(final momento.sdk.CacheClient momentoClient, final String defaultCacheName, int defaultTTL) {
         this.momentoClient = momentoClient;
         this.defaultCacheName = defaultCacheName;
         this.defaultTTL = defaultTTL;
@@ -229,8 +230,10 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
         buffer.putInt(flagsUsed);
         buffer.put(data);
         buffer.rewind();
-        CacheSetResponse response = momentoClient.set(defaultCacheName, key, buffer, exp);
-        return response != null;
+        SetResponse response = momentoClient.set(
+                defaultCacheName, key.getBytes(StandardCharsets.UTF_8), buffer.array(), Duration.ofSeconds(exp)
+        ).join();
+        return response instanceof SetResponse.Success;
     }
 
     // Helper function that reads the raw bytes from Momento and splits up the bytes
@@ -290,15 +293,22 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     }
 
     private Optional<CachedData> performGet(final String key) {
-        CacheGetResponse response = momentoClient.get(defaultCacheName, key);
-        Optional<byte[]> cacheGetResponse = response.byteArray();
-        return cacheGetResponse.map(this::convertToCachedData);
+        GetResponse response = momentoClient.get(defaultCacheName, key).join();
+        if (response instanceof GetResponse.Hit) {
+            return Optional.of(convertToCachedData(((GetResponse.Hit) response).valueByteArray()));
+        }
+        return Optional.empty();
     }
 
     private Map<String, CachedData> performMultiGet(final Collection<String> keys) {
         final Map<String, CompletableFuture<Optional<byte[]>>> futureMap = keys.stream()
-                .collect(Collectors.toMap(key -> key, key -> momentoClient.getAsync(defaultCacheName, key)
-                        .thenApply(CacheGetResponse::byteArray)));
+                .collect(Collectors.toMap(key -> key, key -> momentoClient.get(defaultCacheName, key)
+                        .thenApply(response -> {
+                            if (response instanceof GetResponse.Hit) {
+                                return Optional.of(((GetResponse.Hit) response).valueByteArray());
+                            }
+                            return Optional.empty();
+                        })));
 
         final Map<String, CachedData> result = new HashMap<>();
         for (Map.Entry<String, CompletableFuture<Optional<byte[]>>> entry : futureMap.entrySet()) {
