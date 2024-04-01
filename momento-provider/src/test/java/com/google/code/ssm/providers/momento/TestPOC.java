@@ -10,9 +10,11 @@ import com.google.code.ssm.config.AbstractSSMConfiguration;
 import com.google.code.ssm.providers.CacheException;
 import lombok.Data;
 import lombok.SneakyThrows;
-import momento.sdk.SimpleCacheClient;
-import momento.sdk.messages.CacheInfo;
-import momento.sdk.messages.ListCachesResponse;
+import momento.sdk.CacheClient;
+import momento.sdk.auth.CredentialProvider;
+import momento.sdk.config.Configurations;
+import momento.sdk.responses.cache.control.CacheInfo;
+import momento.sdk.responses.cache.control.CacheListResponse;
 import org.junit.BeforeClass;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -25,6 +27,7 @@ import org.springframework.test.context.junit4.SpringJUnit4ClassRunner;
 import org.springframework.test.context.support.AnnotationConfigContextLoader;
 
 import java.io.Serializable;
+import java.time.Duration;
 import java.util.*;
 import java.util.concurrent.TimeoutException;
 
@@ -36,21 +39,27 @@ import static org.junit.Assert.assertTrue;
 @ContextConfiguration(loader = AnnotationConfigContextLoader.class)
 public class TestPOC {
 
-    private static final String MOMENTO_AUTH_TOKEN = System.getenv("MOMENTO_AUTH_TOKEN");
+    private static final String MOMENTO_API_KEY = System.getenv("MOMENTO_API_KEY");
     // IMPORTANT: This presumes you have already created a cache in Momento named 'example-cache'
     private static final String MOMENTO_CACHE_NAME = "example-cache";
 
     @BeforeClass
     public static void setup() {
-        final SimpleCacheClient client = SimpleCacheClient.builder(MOMENTO_AUTH_TOKEN, 600).build();
+        final CacheClient client = CacheClient.create(
+                CredentialProvider.fromEnvVar("MOMENTO_API_KEY"),
+                Configurations.Laptop.latest(),
+                Duration.ofSeconds(600)
+        );
 
-        final ListCachesResponse listCachesResponse = client.listCaches(Optional.empty());
-        final boolean cacheExists = listCachesResponse.caches().stream()
-                .map(CacheInfo::name)
-                .anyMatch(name -> name.equals(MOMENTO_CACHE_NAME));
+        final CacheListResponse listCachesResponse = client.listCaches().join();
+        if (listCachesResponse instanceof CacheListResponse.Success) {
+            final boolean cacheExists = ((CacheListResponse.Success) listCachesResponse).getCaches().stream()
+                    .map(CacheInfo::name)
+                    .anyMatch(name -> name.equals(MOMENTO_CACHE_NAME));
 
-        if (!cacheExists) {
-            client.createCache(MOMENTO_CACHE_NAME);
+            if (!cacheExists) {
+                client.createCache(MOMENTO_CACHE_NAME).join();
+            }
         }
     }
 
@@ -63,7 +72,7 @@ public class TestPOC {
             conf.setConsistentHashing(true);
             conf.setDefaultTtl(300);
             conf.setCacheName(MOMENTO_CACHE_NAME);
-            conf.setMomentoAuthToken(MOMENTO_AUTH_TOKEN);
+            conf.setMomentoAuthToken(MOMENTO_API_KEY);
             final CacheFactory cacheFactory = new CacheFactory();
             cacheFactory.setCacheClientFactory(new MomentoCacheClientFactory());
             // Use a MomentoAddressProvider to be explicit

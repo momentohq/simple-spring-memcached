@@ -5,7 +5,7 @@
     <groupId>software.momento.java.spring</groupId>
     <artifactId>simple-spring-memcached-parent</artifactId>
     <packaging>pom</packaging>
-    <version>4.2.14-SNAPSHOT</version>
+    <version>4.2.15-SNAPSHOT</version>
     <name>simple-spring-memcached-parent</name>
     <description>Simple spring memcached - parent</description>
     <url>http://github.com/momentohq/simple-spring-memcached</url>
@@ -218,9 +218,9 @@
             </dependency>
 
             <dependency>
-                <groupId>momento.sandbox</groupId>
-                <artifactId>momento-sdk</artifactId>
-                <version>0.21.0</version>
+                <groupId>software.momento.java</groupId>
+                <artifactId>sdk</artifactId>
+                <version>1.11.0</version>
             </dependency>
         </dependencies>
     </dependencyManagement>
