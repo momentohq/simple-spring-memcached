@@ -3,12 +3,12 @@
 To publish to the sonatype central snapshot repo, you will need to get your encrypted password
 from sonatype.
 
-You will need to publish using JDK 11, not JDK 17.  Also, there are
+**IMPORTANT**: You will need to publish using JDK 8, not JDK 11 or 17.  Also, there are
 some failing int tests at the time of this writing so you may need to
 skip the tests.  e.g.:
 
 ```
-sdk use java 11.0.11.hs-adpt
+sdk use java 8.0.402-amzn
 mvn deploy -DskipTests
 ```
 
