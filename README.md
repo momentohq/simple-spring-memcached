@@ -34,7 +34,7 @@ If you are using maven, you can try it now:
        <dependency>
          <groupId>software.momento.java.spring</groupId>
          <artifactId>xmemcached-provider</artifactId>
-         <version>4.2.15-SNAPSHOT</version>
+         <version>4.2.16-SNAPSHOT</version>
        </dependency> 
     </dependencies>
 
