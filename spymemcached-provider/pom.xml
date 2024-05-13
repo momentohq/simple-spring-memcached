@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>software.momento.java.spring</groupId>
 		<artifactId>simple-spring-memcached-parent</artifactId>
-		<version>4.2.16-SNAPSHOT</version>
+		<version>4.2.17-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>spymemcached-provider</artifactId>
