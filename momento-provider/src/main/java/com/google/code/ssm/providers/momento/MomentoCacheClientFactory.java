@@ -17,20 +17,19 @@
 
 package com.google.code.ssm.providers.momento;
 
-import java.net.InetSocketAddress;
-import java.time.Duration;
-import java.util.List;
-
-import momento.sdk.auth.CredentialProvider;
-import momento.sdk.config.Configuration;
-import momento.sdk.config.Configurations;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
 import com.google.code.ssm.providers.CacheClient;
 import com.google.code.ssm.providers.CacheClientFactory;
 import com.google.code.ssm.providers.CacheConfiguration;
-import sun.security.krb5.internal.ccache.Credentials;
+import momento.sdk.auth.CredentialProvider;
+import momento.sdk.config.Configuration;
+import momento.sdk.config.Configurations;
+import momento.sdk.config.transport.GrpcConfiguration;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.InetSocketAddress;
+import java.time.Duration;
+import java.util.List;
 
 public class MomentoCacheClientFactory implements CacheClientFactory {
 
@@ -45,6 +44,11 @@ public class MomentoCacheClientFactory implements CacheClientFactory {
         if (momentoConfiguration != null && momentoConfiguration.getMomentoAuthToken() != null) {
 
             Configuration config = Configurations.InRegion.latest();
+            GrpcConfiguration grpcConfiguration = config.getTransportStrategy().getGrpcConfiguration();
+            config = config.withTransportStrategy(config.getTransportStrategy()
+                    // Hard code this to 8 TCP connections for now.
+                    // TODO make client config as config item user can pass in
+                    .withGrpcConfiguration(grpcConfiguration.withMinNumGrpcChannels(8)));
             if (momentoConfiguration.getRequestTimeout().isPresent()) {
                 config = config.withTimeout(momentoConfiguration.getRequestTimeout().get());
             }
