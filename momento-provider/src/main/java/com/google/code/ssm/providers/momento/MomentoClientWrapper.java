@@ -78,7 +78,7 @@ class MomentoClientWrapper extends AbstractMemcacheClientWrapper {
     public boolean delete(final String key) throws CacheException {
         try {
             momentoClient.delete(defaultCacheName, key);
-            LOGGER.debug(MessageFormat.format("Delete: Success Item removed from cache key: {1}", key));
+            LOGGER.debug(MessageFormat.format("Delete: Success Item removed from cache key: {0}", key));
             return true;
         } catch (RuntimeException e) {
             throw new CacheException(e);
