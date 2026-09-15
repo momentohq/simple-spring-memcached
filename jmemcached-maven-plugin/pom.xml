@@ -9,6 +9,11 @@
 	<artifactId>jmemcached-maven-plugin</artifactId>
 	<packaging>maven-plugin</packaging>
 	<name>jmemcached-maven-plugin</name>
+
+	<properties>
+		<!-- build scaffolding, not part of the published release -->
+		<skipPublishing>true</skipPublishing>
+	</properties>
 	<description>Maven plugin to run embedded memcached (jmemcached) in integration tests</description>
 	<url>http://github.com/ragnor/simple-spring-memcached</url>
 

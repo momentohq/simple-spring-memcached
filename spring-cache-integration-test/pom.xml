@@ -9,6 +9,11 @@
 	<artifactId>spring-cache-integration-test</artifactId>
 	<packaging>jar</packaging>
 	<name>spring-cache-integration-test</name>
+
+	<properties>
+		<!-- build scaffolding, not part of the published release -->
+		<skipPublishing>true</skipPublishing>
+	</properties>
 	<description>Sample project using integration with Spring 3.1 cache abstraction and xmemcached provider</description>
 	<url>http://github.com/ragnor/simple-spring-memcached</url>
 

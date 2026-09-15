@@ -8,6 +8,11 @@
 	<artifactId>integration-test</artifactId>
 	<packaging>jar</packaging>
 	<name>integration-test</name>
+
+	<properties>
+		<!-- build scaffolding, not part of the published release -->
+		<skipPublishing>true</skipPublishing>
+	</properties>
 	<description>Sample project using simple-spring-memcached</description>
 	<url>http://github.com/ragnor/simple-spring-memcached</url>
 
