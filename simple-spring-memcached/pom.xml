@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>software.momento.java.spring</groupId>
 		<artifactId>simple-spring-memcached-parent</artifactId>
-		<version>4.2.18-SNAPSHOT</version>
+		<version>5.0.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>simple-spring-memcached</artifactId>
 	<packaging>jar</packaging>
@@ -104,12 +104,12 @@
 
 		<dependency>
 			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
+			<artifactId>slf4j-reload4j</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>log4j</groupId>
-			<artifactId>log4j</artifactId>
+			<groupId>ch.qos.reload4j</groupId>
+			<artifactId>reload4j</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -128,8 +128,8 @@
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>commons-lang</groupId>
-			<artifactId>commons-lang</artifactId>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -152,19 +152,6 @@
 				<configuration>
 					<sourcepath>${project.build.directory}/generated-sources/delombok</sourcepath>
 					<excludePackageNames>com.google.code.ssm.test.*,com.google.code.ssm.spring.test.*</excludePackageNames>
-					<links>
-						<link>http://docs.spring.io/spring/docs/4.3.x/javadoc-api/</link>
-						<link>http://fnil.net/docs/xmemcached/</link>
-						<link>http://fasterxml.github.io/jackson-core/javadoc/2.8/</link>
-						<link>http://fasterxml.github.io/jackson-databind/javadoc/2.8/</link>
-						<link>http://docs.oracle.com/javase/7/docs/api/</link>
-					</links>
-					<doclet>org.jboss.apiviz.APIviz</doclet>
-					<docletArtifact>
-						<groupId>com.grahamedgecombe.apiviz</groupId>
-						<artifactId>apiviz</artifactId>
-						<version>${apiviz.version}</version>
-					</docletArtifact>
 					<useStandardDocletOptions>true</useStandardDocletOptions>
 					<charset>UTF-8</charset>
 					<encoding>UTF-8</encoding>
@@ -187,12 +174,6 @@
 				<version>${maven-javadoc-plugin.version}</version>
 				<configuration>
 					<sourcepath>${project.build.directory}/generated-sources/delombok</sourcepath>
-					<doclet>org.jboss.apiviz.APIviz</doclet>
-					<docletArtifact>
-						<groupId>com.grahamedgecombe.apiviz</groupId>
-						<artifactId>apiviz</artifactId>
-						<version>${apiviz.version}</version>
-					</docletArtifact>
 					<useStandardDocletOptions>true</useStandardDocletOptions>
 					<charset>UTF-8</charset>
 					<encoding>UTF-8</encoding>
@@ -303,11 +284,9 @@
 						</configuration>
 						<dependencies>
 							<dependency>
-								<groupId>sun.jdk</groupId>
-								<artifactId>tools</artifactId>
-								<version>1.8</version>
-								<scope>system</scope>
-								<systemPath>${java.home}/../lib/tools.jar</systemPath>
+								<groupId>org.projectlombok</groupId>
+								<artifactId>lombok</artifactId>
+								<version>${lombok.version}</version>
 							</dependency>
 						</dependencies>
 					</plugin>

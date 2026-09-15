@@ -23,8 +23,14 @@ Add the repository for the Momento snapshot version:
 
     <repositories>
       <repository>
-        <id>sonatype-snapshots</id>
-        <url>https://s01.oss.sonatype.org/content/repositories/snapshots/</url>
+        <id>central-portal-snapshots</id>
+        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
+        <releases>
+          <enabled>false</enabled>
+        </releases>
+        <snapshots>
+          <enabled>true</enabled>
+        </snapshots>
       </repository>
     </repositories>
 
@@ -34,7 +40,7 @@ If you are using maven, you can try it now:
        <dependency>
          <groupId>software.momento.java.spring</groupId>
          <artifactId>xmemcached-provider</artifactId>
-         <version>4.2.18-SNAPSHOT</version>
+         <version>5.0.0-SNAPSHOT</version>
        </dependency> 
     </dependencies>
 

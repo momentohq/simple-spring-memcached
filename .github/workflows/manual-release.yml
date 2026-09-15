@@ -1,0 +1,53 @@
+name: 'Manual Release'
+
+on:
+  workflow_dispatch:
+    inputs:
+      dry_run:
+        description: 'Compute the next version without tagging or publishing'
+        type: boolean
+        default: false
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout project
+        uses: actions/checkout@v4
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          java-version: 17
+          distribution: 'corretto'
+          cache: 'maven'
+          # writes a settings.xml <server id="central"> and imports the signing key
+          server-id: central
+          server-username: SONATYPE_USERNAME
+          server-password: SONATYPE_PASSWORD
+          gpg-private-key: ${{ secrets.SONATYPE_SIGNING_KEY }}
+          gpg-passphrase: SONATYPE_SIGNING_KEY_PASSWORD
+
+      - name: Set release
+        id: semrel
+        uses: go-semantic-release/action@v1
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          force-bump-patch-version: true
+          dry: ${{ inputs.dry_run }}
+
+      - name: Set version
+        run: mvn -B versions:set -DnewVersion=${{ steps.semrel.outputs.version }} -DgenerateBackupPoms=false
+
+      - name: Verify release build
+        if: ${{ inputs.dry_run }}
+        run: mvn -B -DperformRelease=true -Dgpg.skip=true -Pxmemcached verify
+
+      - name: Publish to Maven Central
+        if: ${{ !inputs.dry_run }}
+        env:
+          SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
+          SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
+          SONATYPE_SIGNING_KEY_PASSWORD: ${{ secrets.SONATYPE_SIGNING_KEY_PASSWORD }}
+        run: mvn -B -DperformRelease=true -Pxmemcached deploy

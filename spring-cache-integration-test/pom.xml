@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>software.momento.java.spring</groupId>
 		<artifactId>simple-spring-memcached-parent</artifactId>
-		<version>4.2.18-SNAPSHOT</version>
+		<version>5.0.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>spring-cache-integration-test</artifactId>
@@ -58,12 +58,12 @@
 
 		<dependency>
 			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
+			<artifactId>slf4j-reload4j</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>log4j</groupId>
-			<artifactId>log4j</artifactId>
+			<groupId>ch.qos.reload4j</groupId>
+			<artifactId>reload4j</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -299,12 +299,6 @@
 									<location>http://docs.spring.io/spring/docs/4.3.x/javadoc-api/</location>
 								</offlineLink>
 							</offlineLinks>
-							<doclet>org.jboss.apiviz.APIviz</doclet>
-							<docletArtifact>
-								<groupId>com.grahamedgecombe.apiviz</groupId>
-								<artifactId>apiviz</artifactId>
-								<version>${apiviz.version}</version>
-							</docletArtifact>
 							<useStandardDocletOptions>true</useStandardDocletOptions>
 							<charset>UTF-8</charset>
 							<encoding>UTF-8</encoding>

@@ -3,7 +3,7 @@
 	<parent>
 		<groupId>software.momento.java.spring</groupId>
 		<artifactId>simple-spring-memcached-parent</artifactId>
-		<version>4.2.18-SNAPSHOT</version>
+		<version>5.0.0-SNAPSHOT</version>
 	</parent>
 	<artifactId>integration-test</artifactId>
 	<packaging>jar</packaging>
@@ -62,18 +62,18 @@
 			<version>${project.version}</version>
 		</dependency>
 		<dependency>
-			<groupId>commons-lang</groupId>
-			<artifactId>commons-lang</artifactId>
+			<groupId>org.apache.commons</groupId>
+			<artifactId>commons-lang3</artifactId>
 		</dependency>
 
 		<dependency>
 			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
+			<artifactId>slf4j-reload4j</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
-			<groupId>log4j</groupId>
-			<artifactId>log4j</artifactId>
+			<groupId>ch.qos.reload4j</groupId>
+			<artifactId>reload4j</artifactId>
 			<scope>test</scope>
 		</dependency>
 		<dependency>
@@ -314,12 +314,6 @@
 							</execution>
 						</executions>
 						<configuration>
-							<doclet>org.jboss.apiviz.APIviz</doclet>
-							<docletArtifact>
-								<groupId>com.grahamedgecombe.apiviz</groupId>
-								<artifactId>apiviz</artifactId>
-								<version>${apiviz.version}</version>
-							</docletArtifact>
 							<useStandardDocletOptions>true</useStandardDocletOptions>
 							<charset>UTF-8</charset>
 							<encoding>UTF-8</encoding>

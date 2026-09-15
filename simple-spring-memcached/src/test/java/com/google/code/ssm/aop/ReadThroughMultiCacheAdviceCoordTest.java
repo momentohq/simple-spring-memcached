@@ -180,6 +180,8 @@ public class ReadThroughMultiCacheAdviceCoordTest {
         when(pjp.getArgs()).thenReturn(args);
 
         when(cacheBase.getMethodToCache(pjp, ReadThroughMultiCache.class)).thenReturn(methodToCache);
+        // deep stubs mock enums under Mockito's inline mock maker; keep the "no serialization type" path under test
+        when(cacheBase.getSerializationType(methodToCache)).thenReturn(null);
         when(cacheBase.getCache(any(AnnotationData.class))).thenReturn(cache);
         when(cacheBase.getSubmission(any())).thenAnswer(new Answer<Object>() {
 
