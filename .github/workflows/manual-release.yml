@@ -40,9 +40,12 @@ jobs:
       - name: Set version
         run: mvn -B versions:set -DnewVersion=${{ steps.semrel.outputs.version }} -DgenerateBackupPoms=false
 
+      # signs with the imported key so a dry run exercises everything except the upload
       - name: Verify release build
         if: ${{ inputs.dry_run }}
-        run: mvn -B -DperformRelease=true -Dgpg.skip=true -Pxmemcached verify
+        env:
+          SONATYPE_SIGNING_KEY_PASSWORD: ${{ secrets.SONATYPE_SIGNING_KEY_PASSWORD }}
+        run: mvn -B -DperformRelease=true -Pxmemcached verify
 
       - name: Publish to Maven Central
         if: ${{ !inputs.dry_run }}

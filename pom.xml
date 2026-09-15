@@ -46,6 +46,14 @@
         <url>http://github.com/momento/simple-spring-memcached/issues</url>
     </issueManagement>
 
+    <scm child.scm.connection.inherit.append.path="false"
+         child.scm.developerConnection.inherit.append.path="false"
+         child.scm.url.inherit.append.path="false">
+        <connection>scm:git:https://github.com/momentohq/simple-spring-memcached.git</connection>
+        <developerConnection>scm:git:git@github.com:momentohq/simple-spring-memcached.git</developerConnection>
+        <url>https://github.com/momentohq/simple-spring-memcached</url>
+    </scm>
+
     <distributionManagement>
         <snapshotRepository>
             <id>central</id>
@@ -223,6 +231,9 @@
                 <configuration>
                     <!-- credentials come from the <server> with this id in settings.xml -->
                     <publishingServerId>central</publishingServerId>
+                    <!-- release the deployment instead of leaving it waiting in the portal UI -->
+                    <autoPublish>true</autoPublish>
+                    <waitUntil>PUBLISHED</waitUntil>
                 </configuration>
             </plugin>
             <!-- For the release process, to create the artifact with all dependencies
