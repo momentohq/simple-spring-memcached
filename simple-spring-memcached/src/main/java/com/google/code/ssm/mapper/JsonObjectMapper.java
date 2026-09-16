@@ -47,6 +47,8 @@ public class JsonObjectMapper extends ObjectMapper { // NO_UCD
     private final ClassAliasTypeResolverBuilder typer;
 
     public JsonObjectMapper() {
+        // setters below re-register the named module to pick up new (de)serializers; Jackson 2.13+ skips that by default
+        configure(MapperFeature.IGNORE_DUPLICATE_MODULE_REGISTRATIONS, false);
         registerModule(module);
 
         configure(MapperFeature.REQUIRE_SETTERS_FOR_GETTERS, true);

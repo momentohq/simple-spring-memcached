@@ -28,8 +28,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
-import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.math.RandomUtils;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -115,7 +115,7 @@ public class ReadThroughMultiCacheTest {
             // 0) You hit, and the key & result are in the map
             // 1) You hit, but the result is null, which counts as a miss.
             // 2) You miss, and the key doesn't even get into the result map.
-            final int option = RandomUtils.nextInt(3);
+            final int option = RandomUtils.nextInt(0, 3);
             if (option == 0) {
                 key2Result.put(key, key + RandomStringUtils.randomNumeric(5));
             }

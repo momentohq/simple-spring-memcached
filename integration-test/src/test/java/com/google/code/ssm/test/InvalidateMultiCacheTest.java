@@ -26,7 +26,7 @@ import java.util.Map;
 
 import com.google.code.ssm.test.svc.TestSvc;
 
-import org.apache.commons.lang.math.RandomUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.beans.factory.annotation.Autowired;

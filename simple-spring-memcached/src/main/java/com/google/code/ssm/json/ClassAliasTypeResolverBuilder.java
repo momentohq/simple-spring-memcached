@@ -28,6 +28,7 @@ import com.fasterxml.jackson.databind.ObjectMapper.DefaultTypeResolverBuilder;
 import com.fasterxml.jackson.databind.ObjectMapper.DefaultTyping;
 import com.fasterxml.jackson.databind.cfg.MapperConfig;
 import com.fasterxml.jackson.databind.jsontype.NamedType;
+import com.fasterxml.jackson.databind.jsontype.PolymorphicTypeValidator;
 import com.fasterxml.jackson.databind.jsontype.TypeIdResolver;
 
 /**
@@ -50,8 +51,9 @@ public class ClassAliasTypeResolverBuilder extends DefaultTypeResolverBuilder {
     }
 
     @Override
-    protected TypeIdResolver idResolver(final MapperConfig<?> config, final JavaType baseType, final Collection<NamedType> subtypes,
-            final boolean forSer, final boolean forDeser) {
+    protected TypeIdResolver idResolver(final MapperConfig<?> config, final JavaType baseType,
+            final PolymorphicTypeValidator subtypeValidator, final Collection<NamedType> subtypes, final boolean forSer,
+            final boolean forDeser) {
         return new ClassAliasIdResolver(baseType, config.getTypeFactory(), idToClass, classToId);
     }
 

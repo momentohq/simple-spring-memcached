@@ -19,7 +19,7 @@ package com.google.code.ssm.providers;
 
 import static org.junit.Assert.assertEquals;
 
-import org.apache.commons.lang.math.RandomUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.junit.Test;
 
 /**

@@ -54,7 +54,7 @@ public class MomentoCacheClientFactory implements CacheClientFactory {
             }
 
             final momento.sdk.CacheClient client = momento.sdk.CacheClient.create(
-                    CredentialProvider.fromString(momentoConfiguration.getMomentoAuthToken()),
+                    credentialProvider(momentoConfiguration),
                     config,
                     Duration.ofSeconds(momentoConfiguration.getDefaultTtl())
             );
@@ -65,5 +65,20 @@ public class MomentoCacheClientFactory implements CacheClientFactory {
             );
         }
         throw new RuntimeException("Momento auth token must be provided in CacheConfiguration");
+    }
+
+    /**
+     * A v2 API key carries no endpoint, so one must be configured alongside it. Without an endpoint the token is
+     * treated as a v1 API key or a disposable token.
+     */
+    static CredentialProvider credentialProvider(final MomentoConfiguration conf) {
+        String endpoint = conf.getMomentoEndpoint();
+        if (endpoint == null || endpoint.isEmpty()) {
+            endpoint = System.getenv("MOMENTO_ENDPOINT");
+        }
+        if (endpoint != null && !endpoint.isEmpty()) {
+            return CredentialProvider.fromApiKeyV2(conf.getMomentoAuthToken(), endpoint);
+        }
+        return CredentialProvider.fromString(conf.getMomentoAuthToken());
     }
 }

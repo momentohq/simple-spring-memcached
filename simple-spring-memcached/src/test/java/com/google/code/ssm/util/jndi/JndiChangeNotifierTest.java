@@ -62,7 +62,7 @@ public class JndiChangeNotifierTest {
         Mockito.when(spy.getAddresses()).thenReturn(null);
 
         spy.check();
-        Mockito.verifyZeroInteractions(addressChangeListener);
+        Mockito.verifyNoInteractions(addressChangeListener);
     }
 
 }

@@ -3,12 +3,17 @@
 	<parent>
 		<groupId>software.momento.java.spring</groupId>
 		<artifactId>simple-spring-memcached-parent</artifactId>
-		<version>4.2.18-SNAPSHOT</version>
+		<version>5.0.0-SNAPSHOT</version>
 	</parent>
 
 	<artifactId>jmemcached-maven-plugin</artifactId>
 	<packaging>maven-plugin</packaging>
 	<name>jmemcached-maven-plugin</name>
+
+	<properties>
+		<!-- build scaffolding, not part of the published release -->
+		<skipPublishing>true</skipPublishing>
+	</properties>
 	<description>Maven plugin to run embedded memcached (jmemcached) in integration tests</description>
 	<url>http://github.com/ragnor/simple-spring-memcached</url>
 
@@ -64,7 +69,7 @@
 		</dependency>
 		<dependency>
 			<groupId>org.slf4j</groupId>
-			<artifactId>slf4j-log4j12</artifactId>
+			<artifactId>slf4j-reload4j</artifactId>
 		</dependency>
 	</dependencies>
 </project>

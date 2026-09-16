@@ -21,8 +21,8 @@ import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 
-import org.apache.commons.lang.RandomStringUtils;
-import org.apache.commons.lang.math.RandomUtils;
+import org.apache.commons.lang3.RandomStringUtils;
+import org.apache.commons.lang3.RandomUtils;
 import org.springframework.stereotype.Repository;
 
 import com.google.code.ssm.api.InvalidateAssignCache;
@@ -125,7 +125,7 @@ public class TestDAOImpl implements TestDAO {
             Thread.sleep(500);
         } catch (InterruptedException ex) {
         }
-        return RandomStringUtils.randomAlphanumeric(25 + RandomUtils.nextInt(30));
+        return RandomStringUtils.randomAlphanumeric(25 + RandomUtils.nextInt(0, 30));
     }
 
     @Override
@@ -151,7 +151,7 @@ public class TestDAOImpl implements TestDAO {
         final String series = RandomStringUtils.randomAlphabetic(6);
         final List<String> results = new ArrayList<String>(keys.size());
         for (final Long key : keys) {
-            results.add(series + "-" + key.toString() + "-" + RandomStringUtils.randomAlphanumeric(25 + RandomUtils.nextInt(30)));
+            results.add(series + "-" + key.toString() + "-" + RandomStringUtils.randomAlphanumeric(25 + RandomUtils.nextInt(0, 30)));
         }
         return results;
     }

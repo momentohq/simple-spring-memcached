@@ -32,6 +32,13 @@ import java.util.Optional;
 @EqualsAndHashCode(callSuper = true)
 public class MomentoConfiguration extends CacheConfiguration {
     private String momentoAuthToken;
+
+    /**
+     * Endpoint to use with a v2 API key, e.g. "cell-us-east-1-1.prod.a.momentohq.com". Falls back to the
+     * MOMENTO_ENDPOINT environment variable. Leave unset when using a v1 API key or a disposable token.
+     */
+    private String momentoEndpoint;
+
     private String cacheName;
     private int defaultTtl = 300;
     private Optional<Duration> requestTimeout = Optional.empty();

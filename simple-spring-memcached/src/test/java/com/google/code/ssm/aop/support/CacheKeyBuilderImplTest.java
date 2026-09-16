@@ -5,7 +5,7 @@ import static org.junit.Assert.fail;
 
 import java.security.InvalidParameterException;
 
-import org.apache.commons.lang.RandomStringUtils;
+import org.apache.commons.lang3.RandomStringUtils;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
