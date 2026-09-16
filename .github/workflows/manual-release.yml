@@ -14,10 +14,10 @@ jobs:
 
     steps:
       - name: Checkout project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           java-version: 17
           distribution: 'corretto'
@@ -38,7 +38,23 @@ jobs:
           fi
           case "$MAVEN_GPG_KEY" in
             *"BEGIN PGP PRIVATE KEY BLOCK"*)
-              echo "signing key looks like an armored private key" ;;
+              # after the BEGIN line come optional "Name: value" armor headers, then a blank line. If that
+              # blank line is lost, bouncycastle reads the first base64 line as a header and fails the
+              # build with "invalid armor header".
+              if printf '%s\n' "$MAVEN_GPG_KEY" | awk '
+                    NR == 1 { next }
+                    { sub(/\r$/, "") }
+                    /^$/ { found = 1; exit }
+                    !/^[A-Za-z][A-Za-z0-9-]*: / { bad = 1; exit }
+                    END { if (bad || !found) exit 1 }'; then
+                echo "signing key looks like an armored private key"
+              else
+                echo "SONATYPE_SIGNING_KEY has no blank line ending its armor header block." >&2
+                echo "Re-set it straight from the export so the armor structure survives:" >&2
+                echo "  gpg --export-secret-keys --armor <fingerprint> > key.asc" >&2
+                echo "  gh secret set SONATYPE_SIGNING_KEY --org momentohq < key.asc" >&2
+                exit 1
+              fi ;;
             *"BEGIN PGP PUBLIC KEY BLOCK"*)
               echo "SONATYPE_SIGNING_KEY holds a PUBLIC key; it must be a private key exported with 'gpg --export-secret-keys --armor'" >&2
               exit 1 ;;
@@ -56,7 +72,22 @@ jobs:
           dry: ${{ inputs.dry_run }}
 
       - name: Set version
-        run: mvn -B versions:set -DnewVersion=${{ steps.semrel.outputs.version }} -DgenerateBackupPoms=false
+        run: |
+          version='${{ steps.semrel.outputs.version }}'
+          if [ -z "$version" ]; then
+            echo "semantic-release produced no version; nothing to release from these commits" >&2
+            exit 1
+          fi
+          mvn -B versions:set -DnewVersion="$version" -DgenerateBackupPoms=false
+          # the poms are 5.0.0-SNAPSHOT in git and only stamped here, so make sure the stamp took:
+          # publishing a -SNAPSHOT would land in the snapshot repo and be purged after ~90 days
+          resolved=$(mvn -B -q help:evaluate -Dexpression=project.version -DforceStdout)
+          echo "releasing version: $resolved"
+          case "$resolved" in
+            *-SNAPSHOT|"")
+              echo "expected a release version, got '$resolved'" >&2
+              exit 1 ;;
+          esac
 
       # signs for real so a dry run exercises everything except the upload
       - name: Verify release build
