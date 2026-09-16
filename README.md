@@ -11,38 +11,25 @@ Distributed caching can be a big, hairy, intricate, and complex proposition when
 
 Simple Spring Memcached (SSM) attempts to simplify implementation for several basic use cases.
 
-**(28-06-2019) New version 4.1.3 with Amazon ElastiCache, Spring 5.1/5.0/4.3 and Java based configuration support is available!
-SSM can also work as a cache back-end in Spring Cache (@Cacheable). Please check [release notes](https://github.com/ragnor/simple-spring-memcached/wiki/Relase-notes).** 
+**Version 5.0.0 is available! Major upgrade: Momento Cache support (new `momento-provider`), Spring 7, and Java 17 baseline.
+SSM can also work as a cache back-end in Spring Cache (@Cacheable).**
 
-This project enables caching in Spring-managed beans, by using Java 5 Annotations and Spring/AspectJ AOP on top of the [spymemcached](https://github.com/couchbase/spymemcached), [xmemcached](https://github.com/killme2008/xmemcached/) or [aws-elasticache](https://github.com/amazonwebservices/aws-elasticache-cluster-client-memcached-for-java) client. Using Simple Spring Memcached requires only a little bit of configuration and the addition of some specific annotations on the methods whose output or input is being cached. 
+This project enables caching in Spring-managed beans, by using Java 5 Annotations and Spring/AspectJ AOP on top of the [spymemcached](https://github.com/couchbase/spymemcached), [xmemcached](https://github.com/killme2008/xmemcached/), [aws-elasticache](https://github.com/amazonwebservices/aws-elasticache-cluster-client-memcached-for-java) or [Momento](https://github.com/momentohq/momento-sdk-java) client. Using Simple Spring Memcached requires only a little bit of configuration and the addition of some specific annotations on the methods whose output or input is being cached. 
 
 
 ## Usage ##
 
-Add the repository for the Momento snapshot version:
-
-    <repositories>
-      <repository>
-        <id>central-portal-snapshots</id>
-        <url>https://central.sonatype.com/repository/maven-snapshots/</url>
-        <releases>
-          <enabled>false</enabled>
-        </releases>
-        <snapshots>
-          <enabled>true</enabled>
-        </snapshots>
-      </repository>
-    </repositories>
-
-If you are using maven, you can try it now:
+SSM requires Java 17+ and Spring 7. If you are using maven, add the dependency:
 
     <dependencies>
        <dependency>
          <groupId>software.momento.java.spring</groupId>
          <artifactId>xmemcached-provider</artifactId>
-         <version>5.0.0-SNAPSHOT</version>
+         <version>5.0.0</version>
        </dependency> 
     </dependencies>
+
+The other providers (`spymemcached-provider`, `aws-elasticache-provider`, `momento-provider`) and the Spring Cache integration (`spring-cache`) are available under the same groupId and version.
 
 and define connection to memcached on localhost using java based configuration:
 	
@@ -65,9 +52,9 @@ or in old fashion way using XML:
 
     <beans xmlns="http://www.springframework.org/schema/beans" xmlns:aop="http://www.springframework.org/schema/aop"
     xsi:schemaLocation="http://www.springframework.org/schema/beans
-            http://www.springframework.org/schema/beans/spring-beans-4.3.xsd
+            http://www.springframework.org/schema/beans/spring-beans.xsd
             http://www.springframework.org/schema/aop
-            http://www.springframework.org/schema/aop/spring-aop-4.3.xsd">
+            http://www.springframework.org/schema/aop/spring-aop.xsd">
 
       <import resource="simplesm-context.xml" />
       <aop:aspectj-autoproxy />
@@ -97,12 +84,36 @@ Now you can annotate method to cache result:
       return result;
     }
 
-If you already using Spring Cache you may use SSM as an another [back-end](https://github.com/ragnor/simple-spring-memcached/wiki/Getting-Started#spring-31-cache-integration).
+If you already using Spring Cache you may use SSM as an another [back-end](https://github.com/momentohq/simple-spring-memcached/wiki/Getting-Started#spring-31-cache-integration).
 
-Need more? Please read [getting started guide](https://github.com/ragnor/simple-spring-memcached/wiki/Getting-Started).
+To cache in Momento instead of memcached, use the `momento-provider`:
+
+    <dependency>
+      <groupId>software.momento.java.spring</groupId>
+      <artifactId>momento-provider</artifactId>
+      <version>5.0.0</version>
+    </dependency>
+
+    @Configuration
+    public class MomentoSSMConfiguration extends AbstractSSMConfiguration {
+      @Bean
+      @Override
+      public CacheFactory defaultMemcachedClient() {
+        final MomentoConfiguration conf = new MomentoConfiguration();
+        conf.setCacheName("my-cache");
+        conf.setMomentoAuthToken("<your Momento API key>");
+        final CacheFactory cf = new CacheFactory();
+        cf.setCacheClientFactory(new com.google.code.ssm.providers.momento.MomentoCacheClientFactory());
+        cf.setAddressProvider(new com.google.code.ssm.providers.momento.MomentoAddressProvider());
+        cf.setConfiguration(conf);
+        return cf;
+      }
+    }
+
+Need more? Please read [getting started guide](https://github.com/momentohq/simple-spring-memcached/wiki/Getting-Started).
 
 ## Documentation ##
-Project documentation is available on [SSM wiki](https://github.com/ragnor/simple-spring-memcached/wiki).  
+Project documentation is available on [SSM wiki](https://github.com/momentohq/simple-spring-memcached/wiki).  
 Javadocs of current release are hosted on [github.io](http://ragnor.github.io/simple-spring-memcached/).  
 Source code from master branch is built and tested on:
 * codeship: [ ![Codeship Status for ragnor/simple-spring-memcached](https://app.codeship.com/projects/ceb653a0-aee7-0136-c667-468d14f4260c/status?branch=master)](https://app.codeship.com/projects/310061)
