@@ -38,7 +38,23 @@ jobs:
           fi
           case "$MAVEN_GPG_KEY" in
             *"BEGIN PGP PRIVATE KEY BLOCK"*)
-              echo "signing key looks like an armored private key" ;;
+              # after the BEGIN line come optional "Name: value" armor headers, then a blank line. If that
+              # blank line is lost, bouncycastle reads the first base64 line as a header and fails the
+              # build with "invalid armor header".
+              if printf '%s\n' "$MAVEN_GPG_KEY" | awk '
+                    NR == 1 { next }
+                    { sub(/\r$/, "") }
+                    /^$/ { found = 1; exit }
+                    !/^[A-Za-z][A-Za-z0-9-]*: / { bad = 1; exit }
+                    END { if (bad || !found) exit 1 }'; then
+                echo "signing key looks like an armored private key"
+              else
+                echo "SONATYPE_SIGNING_KEY has no blank line ending its armor header block." >&2
+                echo "Re-set it straight from the export so the armor structure survives:" >&2
+                echo "  gpg --export-secret-keys --armor <fingerprint> > key.asc" >&2
+                echo "  gh secret set SONATYPE_SIGNING_KEY --org momentohq < key.asc" >&2
+                exit 1
+              fi ;;
             *"BEGIN PGP PUBLIC KEY BLOCK"*)
               echo "SONATYPE_SIGNING_KEY holds a PUBLIC key; it must be a private key exported with 'gpg --export-secret-keys --armor'" >&2
               exit 1 ;;
