@@ -14,10 +14,10 @@ jobs:
 
     steps:
       - name: Checkout project
-        uses: actions/checkout@v4
+        uses: actions/checkout@v7
 
       - name: Set up JDK 17
-        uses: actions/setup-java@v4
+        uses: actions/setup-java@v6
         with:
           java-version: 17
           distribution: 'corretto'
@@ -72,7 +72,22 @@ jobs:
           dry: ${{ inputs.dry_run }}
 
       - name: Set version
-        run: mvn -B versions:set -DnewVersion=${{ steps.semrel.outputs.version }} -DgenerateBackupPoms=false
+        run: |
+          version='${{ steps.semrel.outputs.version }}'
+          if [ -z "$version" ]; then
+            echo "semantic-release produced no version; nothing to release from these commits" >&2
+            exit 1
+          fi
+          mvn -B versions:set -DnewVersion="$version" -DgenerateBackupPoms=false
+          # the poms are 5.0.0-SNAPSHOT in git and only stamped here, so make sure the stamp took:
+          # publishing a -SNAPSHOT would land in the snapshot repo and be purged after ~90 days
+          resolved=$(mvn -B -q help:evaluate -Dexpression=project.version -DforceStdout)
+          echo "releasing version: $resolved"
+          case "$resolved" in
+            *-SNAPSHOT|"")
+              echo "expected a release version, got '$resolved'" >&2
+              exit 1 ;;
+          esac
 
       # signs for real so a dry run exercises everything except the upload
       - name: Verify release build
