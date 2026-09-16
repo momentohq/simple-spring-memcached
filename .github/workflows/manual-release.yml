@@ -22,12 +22,30 @@ jobs:
           java-version: 17
           distribution: 'corretto'
           cache: 'maven'
-          # writes a settings.xml <server id="central"> and imports the signing key
+          # writes a settings.xml <server id="central"> for the publishing plugin. The signing key is
+          # NOT imported into a gpg keyring; maven-gpg-plugin's bc signer reads it from MAVEN_GPG_KEY.
           server-id: central
           server-username: SONATYPE_USERNAME
           server-password: SONATYPE_PASSWORD
-          gpg-private-key: ${{ secrets.SONATYPE_SIGNING_KEY }}
-          gpg-passphrase: SONATYPE_SIGNING_KEY_PASSWORD
+
+      - name: Check signing key format
+        env:
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_SIGNING_KEY }}
+        run: |
+          if [ -z "$MAVEN_GPG_KEY" ]; then
+            echo "SONATYPE_SIGNING_KEY is empty or not visible to this repository" >&2
+            exit 1
+          fi
+          case "$MAVEN_GPG_KEY" in
+            *"BEGIN PGP PRIVATE KEY BLOCK"*)
+              echo "signing key looks like an armored private key" ;;
+            *"BEGIN PGP PUBLIC KEY BLOCK"*)
+              echo "SONATYPE_SIGNING_KEY holds a PUBLIC key; it must be a private key exported with 'gpg --export-secret-keys --armor'" >&2
+              exit 1 ;;
+            *)
+              echo "SONATYPE_SIGNING_KEY is not an armored PGP key block (expected 'gpg --export-secret-keys --armor' output)" >&2
+              exit 1 ;;
+          esac
 
       - name: Set release
         id: semrel
@@ -40,11 +58,12 @@ jobs:
       - name: Set version
         run: mvn -B versions:set -DnewVersion=${{ steps.semrel.outputs.version }} -DgenerateBackupPoms=false
 
-      # signs with the imported key so a dry run exercises everything except the upload
+      # signs for real so a dry run exercises everything except the upload
       - name: Verify release build
         if: ${{ inputs.dry_run }}
         env:
-          SONATYPE_SIGNING_KEY_PASSWORD: ${{ secrets.SONATYPE_SIGNING_KEY_PASSWORD }}
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_SIGNING_KEY }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.SONATYPE_SIGNING_KEY_PASSWORD }}
         run: mvn -B -DperformRelease=true -Pxmemcached verify
 
       - name: Publish to Maven Central
@@ -52,5 +71,6 @@ jobs:
         env:
           SONATYPE_USERNAME: ${{ secrets.SONATYPE_USERNAME }}
           SONATYPE_PASSWORD: ${{ secrets.SONATYPE_PASSWORD }}
-          SONATYPE_SIGNING_KEY_PASSWORD: ${{ secrets.SONATYPE_SIGNING_KEY_PASSWORD }}
+          MAVEN_GPG_KEY: ${{ secrets.SONATYPE_SIGNING_KEY }}
+          MAVEN_GPG_PASSPHRASE: ${{ secrets.SONATYPE_SIGNING_KEY_PASSWORD }}
         run: mvn -B -DperformRelease=true -Pxmemcached deploy

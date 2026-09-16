@@ -94,6 +94,9 @@
         <maven-javadoc-plugin.version>3.12.0</maven-javadoc-plugin.version>
         <maven-jxr-plugin.version>3.6.0</maven-jxr-plugin.version>
         <maven-gpg-plugin.version>3.2.8</maven-gpg-plugin.version>
+        <!-- sign with the key in MAVEN_GPG_KEY rather than a gpg keyring, matching how the
+             other momento repos consume SONATYPE_SIGNING_KEY (gradle's in-memory pgp keys) -->
+        <gpg.signer>bc</gpg.signer>
         <maven-pmd-plugin.version>3.28.0</maven-pmd-plugin.version>
         <maven-project-info-reports-plugin.version>3.9.0</maven-project-info-reports-plugin.version>
         <maven-source-plugin.version>3.4.0</maven-source-plugin.version>
